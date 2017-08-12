@@ -1,4 +1,12 @@
 #!/bin/bash
+
+# 20170812 tkbash @ https://github.com/phil294/tkbash.git
+# eochgls@web.de
+#  .___.
+#  {o,o}
+# /)___)
+# --"-"--
+
 set -e
 
 TMP="/tmp/__tkbash1.0_"
