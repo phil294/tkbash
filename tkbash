@@ -1,0 +1,467 @@
+#!/bin/bash
+set -e
+
+TMP="/tmp/__tkbash1.0_"
+mkdir -p "$TMP"
+
+COLOR_BOLD="$(tput bold)"
+COLOR_RESET="$(tput sgr0)"
+show_help() {
+	echo ">>> ${COLOR_BOLD}TkBash${COLOR_RESET}. Basic Bash superset for Tcl/Tk gui. Just a layer, NO reimplementation of Tk. Place elements using absolute coordinates x/y/w/h."
+	echo
+	echo "${COLOR_BOLD}USAGE${COLOR_RESET}:"
+	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<element>] <variable> [-options...]${COLOR_RESET}"
+	echo -e "\t\tAdd / edit element."
+	echo -e "\t${COLOR_BOLD}tkbash <gui_id> get <variable>${COLOR_RESET}"
+	echo -e "\t\tPrint the value of the associated element."
+	echo -e "\t${COLOR_BOLD}tkbash <gui_id> window [-options...]${COLOR_RESET}"
+	echo -e "\t\tSet window properties."
+	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
+	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize . 200 200'\"."
+	echo
+	echo
+	echo -e "\t\t${COLOR_BOLD}gui_id${COLOR_RESET}"
+	echo -e "\t\t\tUnique identifier for the GUI. To be reused with subsequent tkbash calls."
+	echo -e "\t\t${COLOR_BOLD}element${COLOR_RESET}"
+	echo -e "\t\t\tAny of the elements listed below. Required when adding a new one."
+	echo -e "\t\t${COLOR_BOLD}variable${COLOR_RESET}"
+	echo -e "\t\t\tVariable to hold the value associated with the element."
+	echo
+	echo -e "\t\tWhen adding an element for the first time, positional options are required:"
+	echo -e "\t\t${COLOR_BOLD}-x <x-position>${COLOR_RESET}"
+	echo -e "\t\t\t"
+	echo -e "\t\t${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
+	echo -e "\t\t\t"
+	echo -e "\t\t${COLOR_BOLD}-y <y-position>${COLOR_RESET}"
+	echo -e "\t\t\t"
+	echo -e "\t\t${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
+	echo -e "\t\t\t"
+	echo -e "\t\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
+	echo -e "\t\t\tblub"
+	echo -e "\t\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
+	echo -e "\t\t\tbla"
+	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
+	echo -e "Set options for the entire interface / window as described above."
+	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
+	echo -e "\t\tSet the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic."
+	echo -e "\t${COLOR_BOLD}--title${COLOR_RESET} <title>"
+	echo -e "\t\tSet the window title."
+	echo -e "\t${COLOR_BOLD}--alwaysontop, --topmost${COLOR_RESET} <switch>"
+	echo -e "\t\tSet the window's always on top behaviour. Activate with 0, deactivate with 1."
+	echo -e "\t${COLOR_BOLD}--alpha, transparency${COLOR_RESET} <alpha>"
+	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1."
+	echo -e "\t${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>"
+	echo -e "\t\tSet the window icon."
+	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
+	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
+	echo -e "\t${COLOR_BOLD}--close, --exit${COLOR_RESET}"
+	echo -e "\t\tDestroy, close, exit, die, kill, waste the window."
+	echo
+	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit"
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tThe text that will be displayed on the button."
+	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
+	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tYou cannot retrieve any value from a button."
+	echo -e "\t${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea"
+	echo -e "\t\tA text element is a multiline input area for text."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tSet the contents of the text field."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tPrints the contents of the text field."
+	echo -e "\t${COLOR_BOLD}label${COLOR_RESET}"
+	echo -e "\t\tA label element displays plain text somewhere on the gui."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tSet the contents of the label."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tYou cannot retrieve any value from a label."
+	echo -e "\t${COLOR_BOLD}image${COLOR_RESET} / picture / img / bmp / bitmap / p"
+	echo -e "\t\tDisplay an image."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}--image${COLOR_RESET} <path>"
+	echo -e "\t\t\t\tPath of the image to be shown."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tYou cannot retrieve any value from an image."
+	echo -e "\t\tNote: Internally, this does the same like 'label', meaning these two element names are interchangeable."
+	echo -e "\t${COLOR_BOLD}checkbutton${COLOR_RESET} / checkbox / check / tick / toggle"
+	echo -e "\t\tFor boolean values."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tSet the text to be displayed next to the tick."
+	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
+	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tPrints 1 when checked, 0 when unchecked, nothing when pristine."
+	echo -e "\t${COLOR_BOLD}radiobutton${COLOR_RESET} / radio"
+	echo -e "\t\tMultiple radiobuttons form a group. Only one radiobutton in a group can be active at the same time."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t[required] ${COLOR_BOLD}--group${COLOR_RESET} <group-id>"
+	echo -e "\t\t\t\tAssign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it gets ignored."
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tSet the text to be displayed next to the radiobutton."
+	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
+	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tEvery radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton."
+	echo -e "\t${COLOR_BOLD}combobox${COLOR_RESET} / select / dropdown / dropdownmenu"
+	echo -e "\t\tSelect one of many values. Behaves like a classical HTML-select (the Tk-state 'readonly' is active)."
+	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
+	echo -e "\t\t\t\tA pipe-delimited list (e.g. \"option1|option2|option3\") of options for this select which the user will be able to choose from."
+	echo -e "\t\tGet:"
+	echo -e "\t\t\tPrints the selected value, e.g. \"option1\" when the first value is chosen."
+	echo
+	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command passed will be executed asynchronously from within a subshell. Thus, session variables cannot be accessed."
+}
+
+die() {
+	echo "call 'tkbash --help' for help."
+	exit "$@"
+}
+
+GUI_ID=
+ACTION=
+X=
+Y=
+RELX=
+RELY=
+WIDTH=
+HEIGHT=
+VAR_NAME=
+COMMAND=
+ALWAYS_ON_TOP=
+RESIZABLE=
+THEME=
+TITLE=
+CLOSE=
+ICON=
+ALPHA=
+CONTENT=
+TKCOMMAND=
+DISABLED=
+IMAGE=
+GROUP=
+
+########################### OPTION PARSING
+OPTIONS=w:h:x:X:y:Y:c:t:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
+if [[ $? -ne 0 ]]; then
+	die 2
+fi
+eval set -- "$PARSED"
+while true; do
+	case "$1" in
+		--help)
+			show_help
+			exit 0 ;;
+		-w|--width) WIDTH="$2" && shift 2 ;;
+		-h|--height) HEIGHT="$2" && shift 2 ;;
+		-x) X="$2" && shift 2 ;;
+		-y) Y="$2" && shift 2 ;;
+		-X|--relx) RELX="$2" && shift 2 ;;
+		-Y|--rely) RELY="$2" && shift 2 ;;
+		-v|--var|--variable) VAR_NAME="$2" && shift 2 ;;
+		-c|--command) COMMAND="$2" && shift 2 ;;
+		--alwaysontop|--topmost) ALWAYS_ON_TOP="$2" && shift 2 ;;
+		--resizable) RESIZABLE="$2" && shift 2 ;;
+		--theme) THEME="$2" && shift 2 ;;
+		--close|--exit|--destroy) CLOSE="1" && shift ;;
+		--title) TITLE="$2" && shift 2 ;;
+		--icon) ICON="$2" && shift 2 ;;
+		--alpha|--transparency) ALPHA="$2" && shift 2 ;;
+		-t|--text|--content) CONTENT="$2" && shift 2 ;;
+		--tk|--tkcommand) TKCOMMAND="$2" && shift 2 ;;
+		--disabled) DISABLED="$2" && shift 2 ;;
+		--image) IMAGE="$2" && shift 2 ;;
+		--group) GROUP="$2" && shift 2 ;;
+		--)
+			shift
+			break ;;
+		*)
+			echo "error20170809 04.49.28"
+			exit 3 ;;
+	esac
+done
+
+GUI_ID="$1"
+GET_REQUEST=0
+[ -z "$GUI_ID" ] && echo "specify gui id!" && die 1
+require_variable() {
+	[ -z "$VAR_NAME" ] && echo "specify variable name!" && die 14
+	[[ "$VAR_NAME" == *" "* ]] && echo "variable cannot contain spaces!" && die 21
+
+	return 0
+}
+if [ "$2" = "get" ] && [ $# = 3 ]; then
+	ACTION=
+	VAR_NAME="$3"
+	GET_REQUEST=1
+	require_variable
+elif [ "$2" = "window" ] && [ $# = 2 ]; then
+	ACTION="window"
+	VAR_NAME=
+elif [ $# = 2 ]; then
+	VAR_NAME="$2"
+	require_variable
+elif [ $# = 3 ]; then
+	ACTION="$2"
+	VAR_NAME="$3"
+	require_variable
+else
+	echo "Warning: No variable passed!" # continue on own danger (e.g. --tkcommand)
+fi
+#################################
+
+tcl_esc() {
+	local a="${1//\\/\\\\}"
+	echo "${a//\"/\\\"}"
+}
+tcl_str() {
+	local a="$(tcl_esc "$1")"
+	echo "\"$a\""
+}
+
+WISH_PIPE="${TMP}/${GUI_ID}_wishpipe"
+WISH_OUTFILE="${TMP}/${GUI_ID}_outfile"
+COMMUNICATION_FILE="${TMP}/${GUI_ID}_communicationfile"
+
+wish_exec() {
+	# communicate unidirectionally with running wish process
+	echo "$1" >"$WISH_PIPE"
+}
+
+if ! [[ -p "$WISH_PIPE" ]]; then
+	# gui does not exist yet.
+	# set up new pipe
+	mkfifo "$WISH_PIPE"
+	(tail -f "$WISH_PIPE" |wish) &
+	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
+	# create listenerhandler: execute respective script on command / bind etc.
+	# in wish, every element is a window
+	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${window}_command\""
+	# used by -command options below:
+	wish_exec "
+		proc onchange {window} {
+			if { [file exists ${commandfile_tcl}] == 1} {
+				exec ${commandfile_tcl} >@ stdout 2>@ stderr &
+			}
+		}"
+	# default: window title = script name
+	wish_exec "wm title . $(tcl_str "$(basename "$0")")"
+	# on exit: clean up
+	wish_exec "
+		proc onexit {} {
+			file delete $(tcl_str "$WISH_PIPE")
+			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
+			exec kill -- -$wish_group_id
+			exit
+		}
+		wm protocol . WM_DELETE_WINDOW {
+			onexit
+		}"
+fi
+
+wish_get() {
+	# communicate bidirectionally with running wish process
+	rm -f "$COMMUNICATION_FILE"
+	wish_exec "
+		if {[catch {set result [$1] }]} {
+			puts stderr \"error while communicating with wish:\"
+			puts stderr \"$::errorCode\"
+		}
+		if {[info exists result]} {
+			exec echo \$result > $(tcl_str "$COMMUNICATION_FILE")
+		} else {
+			exec echo \"________EMPTY________\" > $(tcl_str "$COMMUNICATION_FILE")
+		}" # todo: ^ really bad error handling
+	timeout 0.5 bash <<EOL || (echo 'communication error' && exit 22) # todo :|
+	 	while ! [ -s "$COMMUNICATION_FILE" ]; do
+		sleep 0.001
+	done
+EOL
+	wish_response="$(cat "$COMMUNICATION_FILE")"
+	rm "$COMMUNICATION_FILE"
+	[[ "$wish_response" == "________EMPTY________" ]] && return 1
+	return 0
+}
+
+#################
+#################
+#################
+
+handle_window_commands() {
+	[ -n "$TITLE" ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
+	[ -n "$WIDTH" ] && [ -n "$HEIGHT" ] && wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}")"
+	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
+	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
+	[ -n "$ICON" ] && wish_exec "image create photo imgobj -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobj"
+	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
+	[ -n "$THEME" ] && wish_exec "ttk::style theme use $(tcl_str "$THEME")"
+	[ -n "$CLOSE" ] && wish_exec "onexit"
+	return 0
+}
+# custom user tk commands to be executed directly
+handle_tk_commands() {
+	[ -n "$VAR_NAME" ] && var=".$VAR_NAME" || var=
+	wish_exec "$(tcl_esc $var) ${TKCOMMAND}"
+}
+
+analyse_varname() {
+	IS_NEW=0
+	# (ignore ACTION for already-existing elements) -
+	# always get type of given variable:
+	wish_get "
+		set windowclass \"\"
+		if {[winfo exists $(tcl_esc .$VAR_NAME)]} {
+			set windowclass [winfo class $(tcl_esc .$VAR_NAME)]
+		}"
+	wish_get "exec echo \$windowclass"
+	if [ -n "$wish_response" ] ; then
+		TYPE="${wish_response,,}"
+	else
+		# var still unkwnown -> new element. use given ACTION
+		IS_NEW=1
+		if ([ -z "$X" ] && [ -z "$RELX" ]) || ([ -z "$Y" ] && [ -z "$RELY" ]) || [ -z "$WIDTH" ] || [ -z "$HEIGHT" ]; then
+			echo "New element detected. x (-x or --relx) , y (-y or --rely), width (-w) and height (-h) options required."
+			die 6
+		fi
+		[ -z "$ACTION" ] && echo "element '$VAR_NAME' unknown. please specify element type." && die 15
+		TYPE="${ACTION,,}"
+	fi
+	return 0
+}
+
+handle_element_commands() {
+	case "$TYPE" in
+		tbutton|button|ttk::button|submit)
+			# set up element
+			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .$VAR_NAME) -command \"onchange $(tcl_esc $VAR_NAME)\""
+			# parse non-place options
+			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			# create command script if command is set
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			;;
+		text|tk::text|input|edit|textfield|textarea)
+			if [ $IS_NEW = 1 ]; then
+				wish_exec "tk::text $(tcl_esc .$VAR_NAME)" # -yscrollcommand \"$(tcl_esc .$VAR_NAME)_scroll set\"
+				# wish_exec "ttk::scrollbar $(tcl_esc .$VAR_NAME)_scroll -command \"$(tcl_esc .$VAR_NAME) yview\"" # not compatible with basic pack commands below.
+			fi
+			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
+			;;
+		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
+			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .$VAR_NAME)"
+			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -n "$IMAGE" ] && wish_exec "image create photo imgobj -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj"
+			;;
+		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
+			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onchange $(tcl_esc $VAR_NAME)\""
+			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			;;
+		tradiobutton|radiobutton|ttk::radiobutton|radio)
+			if [ $IS_NEW = 1 ]; then
+				[ -z "$GROUP" ] && echo "--group required" && die 19
+				### determine value: (#radiogroupmembers)+1
+				wish_exec "
+					set matched_children \"\"
+					foreach {child} [winfo children .] {
+						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_str "$GROUP") } {
+							append matched_children \"\n\${child}\"
+						}
+					}"
+				wish_get "exec echo \"\$matched_children\""
+				groupmembers_amount=$(echo "$wish_response" |egrep . |wc -l)
+				#zero-indexed:
+				radionumber=$((${groupmembers_amount})) # also considers empty response
+				###
+				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_str "${GROUP}") -command \"onchange $(tcl_esc $VAR_NAME)\" -value ${radionumber}"
+			 fi
+			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			;;
+		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
+			[ $IS_NEW = 1 ] && wish_exec "ttk::combobox $(tcl_esc .$VAR_NAME) -state readonly" # todo change command would be helpful
+			if [ -n "$CONTENT" ]; then
+				IFS='|' && arr=($CONTENT) && unset IFS
+				[[ "${#arr}" == 0 ]] && echo "invalid content specified. should have form \"option1|option2|option3...\"" && die 20
+				values=
+				for i in "${arr[@]}"; do
+					values="${values} $(tcl_str "$i")"
+				done
+				wish_exec "$(tcl_esc .$VAR_NAME) configure -values [list $values]"
+			fi
+			;;
+		*)
+			echo "element >$TYPE< not supported." ; die 5
+			;;
+	esac
+	# disabled option
+	if [ -n "$DISABLED" ]; then
+		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
+		[ -n "$DISABLED" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -state ${DISABLED}"
+	fi
+	# parse place options
+	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
+		wish_exec "place $(tcl_esc .$VAR_NAME) ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
+	return 0
+}
+
+handle_get_commands() {
+	case "$TYPE" in
+		text)
+			wish_get "$(tcl_esc .$VAR_NAME) get 1.0 end"
+			echo "$wish_response"
+			;;
+		tcheckbutton)
+			wish_exec "
+				set check_value \"\"
+				if {[info exists $(tcl_str "$VAR_NAME")]} {
+					set check_value $(tcl_str "\$$VAR_NAME")
+				}"
+			wish_get "exec echo \$check_value"
+			echo "$wish_response"
+			;;
+		tradiobutton)
+			wish_get "$(tcl_esc .$VAR_NAME) cget -variable"
+			wish_exec "
+				set radio_value \"\"
+				if {[info exists $(tcl_str "$wish_response")]} {
+					set radio_value $(tcl_str "\$$wish_response")
+				}"
+			wish_get "exec echo \$radio_value"
+			echo "$wish_response"
+			;;
+		tcombobox)
+			wish_get "$(tcl_esc .$VAR_NAME) get"
+			echo "$wish_response"
+			;;
+		*)
+			echo "get-method for this element not supported :(" && exit 12
+			;;
+	esac
+	return 0
+}
+
+if [ -n "$TKCOMMAND" ]; then
+	handle_tk_commands
+elif [ "$ACTION" = "window" ]; then
+	handle_window_commands
+else
+	analyse_varname
+
+	if [ $GET_REQUEST = 0 ]; then
+		# no get, but add/edit instead.
+		handle_element_commands
+	else
+		# get variable value:
+		handle_get_commands
+	fi
+fi
+
+exit 0
