@@ -136,6 +136,8 @@ ELEMENTS
 				A pipe-delimited list (e.g. "option1|option2|option3") of options for this select which the user will be able to choose from.
 		Get:
 			Prints the selected value, e.g. "option1" when the first value is chosen.
+	--disabled
+		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels.
 
 Note on the -c, --command option: The command passed will be executed asynchronously from within a subshell. Thus, session variables cannot be accessed.
 
