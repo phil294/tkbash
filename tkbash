@@ -223,8 +223,10 @@ elif [ $# = 3 ]; then
 	ACTION="$2"
 	VAR_NAME="$3"
 	require_variable
-else
+elif [ $# = 1 ]; then
 	echo "Warning: No variable passed!" # continue on own danger (e.g. --tkcommand)
+else
+	echo "Too many arguments!" && die 22
 fi
 #################################
 
@@ -326,7 +328,7 @@ analyse_varname() {
 	IS_NEW=0
 	# (ignore ACTION for already-existing elements) -
 	# always get type of given variable:
-	wish_get "
+	wish_exec "
 		set windowclass \"\"
 		if {[winfo exists $(tcl_esc .$VAR_NAME)]} {
 			set windowclass [winfo class $(tcl_esc .$VAR_NAME)]
