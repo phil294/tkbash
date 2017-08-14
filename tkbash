@@ -49,7 +49,7 @@ show_help() {
 	echo -e "\t\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
 	echo -e "\t\t\tbla"
 	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
-	echo -e "Set options for the entire interface / window as described above."
+	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified."
 	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
 	echo -e "\t\tSet the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic."
 	echo -e "\t${COLOR_BOLD}--title${COLOR_RESET} <title>"
