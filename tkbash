@@ -312,7 +312,7 @@ handle_window_commands() {
 	[ -n "$WIDTH" ] && [ -n "$HEIGHT" ] && wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}")"
 	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
 	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
-	[ -n "$ICON" ] && wish_exec "image create photo imgobj -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobj"
+	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
 	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
 	[ -n "$THEME" ] && wish_exec "ttk::style theme use $(tcl_str "$THEME")"
 	[ -n "$CLOSE" ] && wish_exec "onexit"
@@ -369,7 +369,7 @@ handle_element_commands() {
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .$VAR_NAME)"
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$IMAGE" ] && wish_exec "image create photo imgobj -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj"
+			[ -n "$IMAGE" ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onchange $(tcl_esc $VAR_NAME)\""
