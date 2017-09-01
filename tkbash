@@ -188,7 +188,7 @@ while true; do
 		--title) TITLE="$2" && shift 2 ;;
 		--icon) ICON="$2" && shift 2 ;;
 		--alpha|--transparency) ALPHA="$2" && shift 2 ;;
-		--hotkey|--shortcut|--bin) HOTKEY="$2" && shift 2 ;;
+		--hotkey|--shortcut|--bind) HOTKEY="$2" && shift 2 ;;
 		-t|--text|--content) CONTENT="$2" && shift 2 ;;
 		--tk|--tkcommand) TKCOMMAND="$2" && shift 2 ;;
 		--disabled) DISABLED="$2" && shift 2 ;;
