@@ -4,8 +4,6 @@ Build fancy graphical user interfaces with simple bash commands!
 
 ![tkbash-gui](https://i.imgur.com/J8XUtSB.png)
 ```
-#!/bin/bash
-tkbash 1 window --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 1 --icon "kitten.png"
 tkbash 1 label label1 --relx 0.4 -y 10 -w 130 -h 20 -t "I like bananas."
 tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green|Blue"
 tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
@@ -13,6 +11,8 @@ tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
     notify-send \"You selected color \$(tkbash 1 get select1)!\""
 tkbash 1 text text1 -x 165 -y 105 -w 120 -h 120 -t "Yorem Lipsum"
 tkbash 1 image image1 -x 10 -y 60 -w 125 -h 120 --image "kitten.png"
+tkbash 1 window --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 1 --icon "kitten.png"
+tkbash 1 window --hotkey Escape --command "echo You pressed Escape."
 ```
 
 - Pure bash code (internally translates into respective [Tcl/Tk](https://www.tcl.tk/) code, sent to `wish` background process)
@@ -22,6 +22,7 @@ tkbash 1 image image1 -x 10 -y 60 -w 125 -h 120 --image "kitten.png"
 - Print element contents with `get <variable>`
 - Currently supports: text (input), combobox (select), checkbutton (checkbox), radiobutton groups, button, label, image
 - Every element gets placed with absolute or window-relative coordinates. No geometry managers supported.
+- Hotkey support
 - Entire functionality of Tk available if desired via `--tkcommand`
 - Configure multiple GUIs that access each other
 
@@ -62,7 +63,7 @@ USAGE:
 		-h, --height <height>
 			bla
 Window
-Set options for the entire interface / window as described above.
+Set options for the entire interface / window as described above. You can set width and height if BOTH are specified.
 	--theme <themename>
 		Set the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic.
 	--title <title>
@@ -77,6 +78,8 @@ Set options for the entire interface / window as described above.
 		Set the window's resizable behaviour. Activate with 0, deactivate with 1.
 	--close, --exit
 		Destroy, close, exit, die, kill, waste the window.
+	--hotkey, --bind, --shortcut
+		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'"
 
 ELEMENTS
 	button / submit
