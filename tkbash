@@ -64,6 +64,8 @@ show_help() {
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
 	echo -e "\t${COLOR_BOLD}--close, --exit${COLOR_RESET}"
 	echo -e "\t\tDestroy, close, exit, die, kill, waste the window."
+	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
+	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'\""
 	echo
 	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit"
@@ -156,10 +158,11 @@ TKCOMMAND=
 DISABLED=
 IMAGE=
 GROUP=
+HOTKEY=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -185,6 +188,7 @@ while true; do
 		--title) TITLE="$2" && shift 2 ;;
 		--icon) ICON="$2" && shift 2 ;;
 		--alpha|--transparency) ALPHA="$2" && shift 2 ;;
+		--hotkey|--shortcut|--bin) HOTKEY="$2" && shift 2 ;;
 		-t|--text|--content) CONTENT="$2" && shift 2 ;;
 		--tk|--tkcommand) TKCOMMAND="$2" && shift 2 ;;
 		--disabled) DISABLED="$2" && shift 2 ;;
@@ -194,7 +198,7 @@ while true; do
 			shift
 			break ;;
 		*)
-			echo "error20170809 04.49.28"
+			echo "error parsing options ):"
 			exit 3 ;;
 	esac
 done
@@ -228,6 +232,7 @@ elif [ $# = 1 ]; then
 else
 	echo "Too many arguments!" && die 22
 fi
+[[ "$HOTKEY" == *" "* ]] && echo "hotkey name cannot contain spaces!" && die 21
 #################################
 
 tcl_esc() {
@@ -255,11 +260,11 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	# create listenerhandler: execute respective script on command / bind etc.
 	# in wish, every element is a window
-	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${window}_command\""
+	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
 	# used by -command options below:
 	wish_exec "
-		proc onchange {window} {
-			if { [file exists ${commandfile_tcl}] == 1} {
+		proc onaction {trigger} {
+		if { [file exists ${commandfile_tcl}] == 1} {
 				exec ${commandfile_tcl} >@ stdout 2>@ stderr &
 			}
 		}"
@@ -315,12 +320,17 @@ handle_window_commands() {
 	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
 	[ -n "$THEME" ] && wish_exec "ttk::style theme use $(tcl_str "$THEME")"
 	[ -n "$CLOSE" ] && wish_exec "onexit"
+	if [ -n "$HOTKEY" ]; then
+		[ -z "$COMMAND" ] && echo "hotkey command also needs the --command option." && die 23
+		wish_exec "bind . <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
+		echo "$COMMAND" > "${TMP}/${GUI_ID}_${HOTKEY}_command" && chmod +x "${TMP}/${GUI_ID}_${HOTKEY}_command"
+	fi
 	return 0
 }
 # custom user tk commands to be executed directly
 handle_tk_commands() {
 	[ -n "$VAR_NAME" ] && var=".$VAR_NAME" || var=
-	wish_exec "$(tcl_esc $var) ${TKCOMMAND}"
+	wish_exec "$(tcl_esc "$var") ${TKCOMMAND}"
 }
 
 analyse_varname() {
@@ -352,11 +362,11 @@ handle_element_commands() {
 	case "$TYPE" in
 		tbutton|button|ttk::button|submit)
 			# set up element
-			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .$VAR_NAME) -command \"onchange $(tcl_esc $VAR_NAME)\""
+			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .$VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
 			# parse non-place options
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			# create command script if command is set
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
@@ -371,9 +381,9 @@ handle_element_commands() {
 			[ -n "$IMAGE" ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onchange $(tcl_esc $VAR_NAME)\""
+			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
 			if [ $IS_NEW = 1 ]; then
@@ -391,10 +401,10 @@ handle_element_commands() {
 				#zero-indexed:
 				radionumber=$((${groupmembers_amount})) # also considers empty response
 				###
-				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_str "${GROUP}") -command \"onchange $(tcl_esc $VAR_NAME)\" -value ${radionumber}"
+				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_str "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
 			 fi
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::combobox $(tcl_esc .$VAR_NAME) -state readonly" # todo change command would be helpful
