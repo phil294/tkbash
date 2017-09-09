@@ -12,9 +12,9 @@ set -e
 TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
 
-COLOR_BOLD="$(tput bold)"
-COLOR_RESET="$(tput sgr0)"
 show_help() {
+	COLOR_BOLD="$(tput bold)"
+	COLOR_RESET="$(tput sgr0)"
 	echo ">>> ${COLOR_BOLD}TkBash${COLOR_RESET}. Basic Bash superset for Tcl/Tk gui. Just a layer, NO reimplementation of Tk. Place elements using absolute coordinates x/y/w/h."
 	echo
 	echo "${COLOR_BOLD}USAGE${COLOR_RESET}:"
@@ -62,7 +62,7 @@ show_help() {
 	echo -e "\t\tSet the window icon."
 	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
-	echo -e "\t${COLOR_BOLD}--close, --exit${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}"
 	echo -e "\t\tDestroy, close, exit, die, kill, waste the window."
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'\""
@@ -128,7 +128,7 @@ show_help() {
 	echo -e "\t--disabled"
 	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels."
 	echo
-	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command passed will be executed asynchronously from within a subshell. Thus, session variables cannot be accessed."
+	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed."
 }
 
 die() {
@@ -162,7 +162,7 @@ HOTKEY=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -184,7 +184,7 @@ while true; do
 		--alwaysontop|--topmost) ALWAYS_ON_TOP="$2" && shift 2 ;;
 		--resizable) RESIZABLE="$2" && shift 2 ;;
 		--theme) THEME="$2" && shift 2 ;;
-		--close|--exit|--destroy) CLOSE="1" && shift ;;
+		--close|--exit|--destroy|--quit) CLOSE="1" && shift ;;
 		--title) TITLE="$2" && shift 2 ;;
 		--icon) ICON="$2" && shift 2 ;;
 		--alpha|--transparency) ALPHA="$2" && shift 2 ;;
@@ -228,7 +228,8 @@ elif [ $# = 3 ]; then
 	VAR_NAME="$3"
 	require_variable
 elif [ $# = 1 ]; then
-	echo "Warning: No variable passed!" # continue on own danger (e.g. --tkcommand)
+	[ -z "$TKCOMMAND" ] && require_variable # = exit	
+	# else: tkcommand.
 else
 	echo "Too many arguments!" && die 22
 fi
@@ -241,6 +242,10 @@ tcl_esc() {
 tcl_str() {
 	local a="$(tcl_esc "$1")"
 	echo "\"$a\""
+}
+# write commands $2 into tmp command file for identifier $1, so the file can later be run by tcl proc onaction
+write_command_file() {
+	echo $'#!/bin/bash\n' "${2}" > "${TMP}/${GUI_ID}_${1}_command" && chmod +x "${TMP}/${GUI_ID}_${1}_command"
 }
 
 WISH_PIPE="${TMP}/${GUI_ID}_wishpipe"
@@ -276,7 +281,6 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 			file delete $(tcl_str "$WISH_PIPE")
 			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
 			exec kill -- -$wish_group_id
-			exit
 		}
 		wm protocol . WM_DELETE_WINDOW {
 			onexit
@@ -323,7 +327,7 @@ handle_window_commands() {
 	if [ -n "$HOTKEY" ]; then
 		[ -z "$COMMAND" ] && echo "hotkey command also needs the --command option." && die 23
 		wish_exec "bind . <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
-		echo "$COMMAND" > "${TMP}/${GUI_ID}_${HOTKEY}_command" && chmod +x "${TMP}/${GUI_ID}_${HOTKEY}_command"
+		write_command_file "$HOTKEY" "$COMMAND"
 	fi
 	return 0
 }
@@ -366,7 +370,7 @@ handle_element_commands() {
 			# parse non-place options
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			# create command script if command is set
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
@@ -383,7 +387,7 @@ handle_element_commands() {
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
 			if [ $IS_NEW = 1 ]; then
@@ -404,7 +408,7 @@ handle_element_commands() {
 				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_str "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
 			 fi
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && echo "$COMMAND" > "${TMP}/${GUI_ID}_.${VAR_NAME}_command" && chmod +x "${TMP}/${GUI_ID}_.${VAR_NAME}_command"
+			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::combobox $(tcl_esc .$VAR_NAME) -state readonly" # todo change command would be helpful
