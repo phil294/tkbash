@@ -55,17 +55,11 @@ USAGE:
 
 		When adding an element for the first time, positional options are required:
 		-x <x-position>
-			
 		-X, --relx <x-position>
-			
 		-y <y-position>
-			
 		-Y, --rely <y-position>
-			
 		-w, --width <width>
-			blub
 		-h, --height <height>
-			bla
 Window
 Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position).
 	--theme <themename>
