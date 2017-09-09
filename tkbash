@@ -49,7 +49,7 @@ show_help() {
 	echo -e "\t\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
 	echo -e "\t\t\tbla"
 	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
-	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified."
+	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position)."
 	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
 	echo -e "\t\tSet the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic."
 	echo -e "\t${COLOR_BOLD}--title${COLOR_RESET} <title>"
@@ -317,7 +317,13 @@ EOL
 
 handle_window_commands() {
 	[ -n "$TITLE" ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
-	[ -n "$WIDTH" ] && [ -n "$HEIGHT" ] && wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}")"
+  if ([ -n "$WIDTH" ] && [ -n "$HEIGHT" ]); then
+    if ([ -n "$X" ] && [ -n "$Y" ]); then
+      wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")"
+    else
+      wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}")"
+    fi
+  fi
 	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
 	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
 	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
