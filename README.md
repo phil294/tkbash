@@ -67,7 +67,7 @@ USAGE:
 		-h, --height <height>
 			bla
 Window
-Set options for the entire interface / window as described above. You can set width and height if BOTH are specified.
+Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position).
 	--theme <themename>
 		Set the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic.
 	--title <title>
