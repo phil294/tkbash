@@ -299,8 +299,9 @@ wish_get() {
 		sleep 0.001
 	done
 EOL
-	wish_response="$(cat "$COMMUNICATION_FILE")"
+	local wish_response="$(cat "$COMMUNICATION_FILE")"
 	rm "$COMMUNICATION_FILE"
+	echo "$wish_response"
 	[[ "$wish_response" == "________EMPTY________" ]] && return 1
 	return 0
 }
@@ -346,9 +347,9 @@ analyse_varname() {
 		if {[winfo exists $(tcl_esc .$VAR_NAME)]} {
 			set windowclass [winfo class $(tcl_esc .$VAR_NAME)]
 		}"
-	wish_get "exec echo \$windowclass"
-	if [ -n "$wish_response" ] ; then
-		TYPE="${wish_response,,}"
+	resp="$(wish_get "exec echo \$windowclass")"
+	if [ -n "$resp" ] ; then
+		TYPE="${resp,,}"
 	else
 		# var still unkwnown -> new element. use given ACTION
 		IS_NEW=1
@@ -400,8 +401,7 @@ handle_element_commands() {
 							append matched_children \"\n\${child}\"
 						}
 					}"
-				wish_get "exec echo \"\$matched_children\""
-				groupmembers_amount=$(echo "$wish_response" |egrep . |wc -l)
+				groupmembers_amount=$(echo "$(wish_get "exec echo \"\$matched_children\"")" |egrep . |wc -l)
 				#zero-indexed:
 				radionumber=$((${groupmembers_amount})) # also considers empty response
 				###
@@ -440,8 +440,7 @@ handle_element_commands() {
 handle_get_commands() {
 	case "$TYPE" in
 		text)
-			wish_get "$(tcl_esc .$VAR_NAME) get 1.0 end"
-			echo "$wish_response"
+			echo "$(wish_get "$(tcl_esc .$VAR_NAME) get 1.0 end")"
 			;;
 		tcheckbutton)
 			wish_exec "
@@ -449,22 +448,19 @@ handle_get_commands() {
 				if {[info exists $(tcl_str "$VAR_NAME")]} {
 					set check_value $(tcl_str "\$$VAR_NAME")
 				}"
-			wish_get "exec echo \$check_value"
-			echo "$wish_response"
+			echo "$(wish_get "exec echo \$check_value")"
 			;;
 		tradiobutton)
-			wish_get "$(tcl_esc .$VAR_NAME) cget -variable"
+			local radio_var="$(wish_get "$(tcl_esc .$VAR_NAME) cget -variable")"
 			wish_exec "
 				set radio_value \"\"
-				if {[info exists $(tcl_str "$wish_response")]} {
-					set radio_value $(tcl_str "\$$wish_response")
+				if {[info exists $(tcl_str "$radio_var")]} {
+					set radio_value $(tcl_str "\$$radio_var")
 				}"
-			wish_get "exec echo \$radio_value"
-			echo "$wish_response"
+			echo "$(wish_get "exec echo \$radio_value")"
 			;;
 		tcombobox)
-			wish_get "$(tcl_esc .$VAR_NAME) get"
-			echo "$wish_response"
+			echo "$(wish_get "$(tcl_esc .$VAR_NAME) get")"
 			;;
 		*)
 			echo "get-method for this element not supported :(" && exit 12
