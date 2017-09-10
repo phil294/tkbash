@@ -74,6 +74,12 @@ Set options for the entire interface / window as described above. You can set wi
 		Set the window icon.
 	--resizable <switch>
 		Set the window's resizable behaviour. Activate with 0, deactivate with 1.
+	--iconify
+		Minimize the window.
+	--hide
+		Hide the window by detaching it from the Window Manager.
+	--show
+		Set the window visible by re-attaching it to the Winodow Manager.
 	--close, --exit
 		Destroy, close, exit, die, kill, waste the window.
 	--hotkey, --bind, --shortcut

@@ -56,6 +56,12 @@ show_help() {
 	echo -e "\t\tSet the window icon."
 	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
+	echo -e "\t${COLOR_BOLD}--iconify${COLOR_RESET}"
+	echo -e "\t\tMinimize the window."
+	echo -e "\t${COLOR_BOLD}--hide${COLOR_RESET}"
+	echo -e "\t\tHide the window by detaching it from the Window Manager."
+	echo -e "\t${COLOR_BOLD}--show${COLOR_RESET}"
+	echo -e "\t\tSet the window visible by re-attaching it to the Winodow Manager."
 	echo -e "\t${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}"
 	echo -e "\t\tDestroy, close, exit, die, kill, waste the window."
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
@@ -144,6 +150,9 @@ ALWAYS_ON_TOP=
 RESIZABLE=
 THEME=
 TITLE=
+ICONIFY=
+HIDE=
+SHOW=
 CLOSE=
 ICON=
 ALPHA=
@@ -156,7 +165,7 @@ HOTKEY=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -178,6 +187,9 @@ while true; do
 		--alwaysontop|--topmost) ALWAYS_ON_TOP="$2" && shift 2 ;;
 		--resizable) RESIZABLE="$2" && shift 2 ;;
 		--theme) THEME="$2" && shift 2 ;;
+		--iconify) ICONIFY="1" && shift ;;
+		--hide) HIDE="1" && shift ;;
+		--show) SHOW="1" && shift ;;
 		--close|--exit|--destroy|--quit) CLOSE="1" && shift ;;
 		--title) TITLE="$2" && shift 2 ;;
 		--icon) ICON="$2" && shift 2 ;;
@@ -324,6 +336,9 @@ handle_window_commands() {
 	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
 	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
 	[ -n "$THEME" ] && wish_exec "ttk::style theme use $(tcl_str "$THEME")"
+	[ -n "$ICONIFY" ] && wish_exec "wm iconify ."
+	[ -n "$HIDE" ] && wish_exec "wm withdraw ."
+	[ -n "$SHOW" ] && wish_exec "wm deiconify ."
 	[ -n "$CLOSE" ] && wish_exec "onexit"
 	if [ -n "$HOTKEY" ]; then
 		[ -z "$COMMAND" ] && echo "hotkey command also needs the --command option." && die 23
