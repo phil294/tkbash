@@ -68,6 +68,8 @@ Set options for the entire interface / window as described above. You can set wi
 		Set the window title.
 	--alwaysontop, --topmost <switch>
 		Set the window's always on top behaviour. Activate with 0, deactivate with 1.
+	--maximize
+		Maxmize the window to fullscreen.
 	--alpha, transparency <alpha>
 		Set the transparency of the entire window. Floating value between 0 and 1.
 	--icon <iconpath>

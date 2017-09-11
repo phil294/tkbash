@@ -50,6 +50,8 @@ show_help() {
 	echo -e "\t\tSet the window title."
 	echo -e "\t${COLOR_BOLD}--alwaysontop, --topmost${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's always on top behaviour. Activate with 0, deactivate with 1."
+	echo -e "\t${COLOR_BOLD}--maximize${COLOR_RESET}"
+	echo -e "\t\tMaxmize the window to fullscreen."
 	echo -e "\t${COLOR_BOLD}--alpha, transparency${COLOR_RESET} <alpha>"
 	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1."
 	echo -e "\t${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>"
@@ -147,6 +149,7 @@ HEIGHT=
 VAR_NAME=
 COMMAND=
 ALWAYS_ON_TOP=
+MAXIMIEZ=
 RESIZABLE=
 THEME=
 TITLE=
@@ -165,7 +168,7 @@ HOTKEY=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -185,6 +188,7 @@ while true; do
 		-v|--var|--variable) VAR_NAME="$2" && shift 2 ;;
 		-c|--command) COMMAND="$2" && shift 2 ;;
 		--alwaysontop|--topmost) ALWAYS_ON_TOP="$2" && shift 2 ;;
+		--maximize) MAXIMIZE="1" && shift ;;
 		--resizable) RESIZABLE="$2" && shift 2 ;;
 		--theme) THEME="$2" && shift 2 ;;
 		--iconify) ICONIFY="1" && shift ;;
@@ -332,6 +336,7 @@ handle_window_commands() {
     fi
   fi
 	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
+	[ -n "$MAXIMIZE" ] && wish_exec "wm attributes . -fullscreen $(tcl_str "$MAXIMIZE")"
 	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
 	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
 	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
