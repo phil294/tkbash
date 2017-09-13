@@ -311,7 +311,7 @@ wish_get() {
 			exec echo \"________EMPTY________\" > $(tcl_str "$COMMUNICATION_FILE")
 		}" # todo: ^ really bad error handling
 
-	# timeout: suppport busybox: thx to vishnubob: https://github.com/vishnubob/wait-for-it/pull/31/files
+	# timeout: suppport busybox: thx to Tom Pl?ss: https://github.com/vishnubob/wait-for-it/pull/31/files
 	ls -l `which timeout` | grep busybox > /dev/null
 	if [[ $? -eq 0 ]]; then
 		TIMEOUT_OPTION="-t 1"
