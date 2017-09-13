@@ -30,6 +30,8 @@ tkbash 1 button1 -t "new button text"
 - Entire functionality of Tk available if desired via `--tkcommand`
 - Configure multiple GUIs that access each other
 
+This repository is fairly new. If you experience any issues, please open an issue above or contact eochgls@web.de.
+
 Snapshot of `tkbash --help`:
 
 ```

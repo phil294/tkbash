@@ -310,7 +310,15 @@ wish_get() {
 		} else {
 			exec echo \"________EMPTY________\" > $(tcl_str "$COMMUNICATION_FILE")
 		}" # todo: ^ really bad error handling
-	timeout 0.5 bash <<EOL || (echo 'communication error' && exit 22) # todo :|
+
+	# timeout: suppport busybox: thx to vishnubob: https://github.com/vishnubob/wait-for-it/pull/31/files
+	ls -l `which timeout` | grep busybox > /dev/null
+	if [[ $? -eq 0 ]]; then
+		TIMEOUT_OPTION="-t 1"
+	else
+		TIMEOUT_OPTION="1"
+	fi
+	timeout $TIMEOUT_OPTION bash <<EOL || (echo 'communication error' && exit 22) # todo :|
 	 	while ! [ -s "$COMMUNICATION_FILE" ]; do
 		sleep 0.001
 	done
