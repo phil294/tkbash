@@ -311,22 +311,29 @@ wish_get() {
 			exec echo \"________EMPTY________\" > $(tcl_str "$COMMUNICATION_FILE")
 		}" # todo: ^ really bad error handling
 
-	# timeout: suppport busybox: thx to Tom Pl?ss: https://github.com/vishnubob/wait-for-it/pull/31/files
-	ls -l `which timeout` | grep busybox > /dev/null
-	if [[ $? -eq 0 ]]; then
-		TIMEOUT_OPTION="-t 1"
-	else
-		TIMEOUT_OPTION="1"
-	fi
-	timeout $TIMEOUT_OPTION bash <<EOL || (echo 'communication error' && exit 22) # todo :|
-	 	while ! [ -s "$COMMUNICATION_FILE" ]; do
-		sleep 0.001
-	done
-EOL
+	# wait for response: cannot use timeout due to weird busybox behaviour
+	(
+		(
+			while ! [ -s "$COMMUNICATION_FILE" ]; do
+				sleep 0.001
+			done
+		) &
+		local wait_for_response_pid=$!
+		trap -- "" SIGTERM
+		(
+			sleep 1 # wait 1 sec for response at maximum
+			kill $wait_for_response_pid || true
+		) >/dev/null 2>&1 &
+		local terminator_pid=$!
+		wait $wait_for_response_pid || return 22
+		kill $terminator_pid
+	) || return 22
+
+	# parse response
 	local wish_response="$(cat "$COMMUNICATION_FILE")"
 	rm "$COMMUNICATION_FILE"
+	[[ "$wish_response" == "________EMPTY________" ]] && return 22002
 	echo "$wish_response"
-	[[ "$wish_response" == "________EMPTY________" ]] && return 1
 	return 0
 }
 
