@@ -290,7 +290,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		proc onexit {} {
 			file delete $(tcl_str "$WISH_PIPE")
 			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
-			exec kill -- -$wish_group_id
+			exec kill -TERM -$wish_group_id
 		}
 		wm protocol . WM_DELETE_WINDOW {
 			onexit
