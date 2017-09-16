@@ -271,7 +271,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	# gui does not exist yet.
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
-	(tail -f "$WISH_PIPE" |wish) &
+	(tail -f -s 0 "$WISH_PIPE" |wish) &
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	# create listenerhandler: execute respective script on command / bind etc.
 	# in wish, every element is a window
