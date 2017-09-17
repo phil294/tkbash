@@ -7,7 +7,8 @@
 # /)___)
 # --"-"--
 
-set -e
+set -e # exit on error
+set -m # enable job control (so wishpipe job has its own group)
 
 TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
@@ -271,7 +272,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	# gui does not exist yet.
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
-	(tail -f "$WISH_PIPE" |wish) & # todoo --pid option ?
+	(while true; do cat "$WISH_PIPE"; done |wish) & # no tail -f: busybox issues
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	# create listenerhandler: execute respective script on command / bind etc.
 	# in wish, every element is a window
