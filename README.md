@@ -154,6 +154,12 @@ Note on the -c, --command option: The command passed will be executed asynchrono
 
 ```
 
+### Coloring elements
+This feature (like much much more) is not supported by tkbash itself (yet), use `--tkcommand`:
+```
+tkbash 1 label1 --tkcommand 'configure -background yellow'
+```
+
 ### Drag+drop
 Here is a minimal example of how drag'n'drop might be implemented for the image element from the above sample window. This supports files, text etc. This functionality is not supported natively because it needs an external library. Download here: http://wiki.tcl.tk/2768 & copy for example to /usr/share/tcltk/tclx.y/. The below code makes use of the `--tkcommand` option. So, everything starting from `package` on is tcl code.
 ```
