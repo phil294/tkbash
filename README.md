@@ -27,7 +27,7 @@ tkbash 1 button1 -t "new button text"
 - Currently supports: text (input), combobox (select), checkbutton (checkbox), radiobutton groups, button, label, image
 - Every element gets placed with absolute or window-relative coordinates. No geometry managers supported.
 - Hotkey support
-- Entire functionality of Tk available if desired via `--tkcommand`
+- Entire functionality of Tk available if desired via `--tkcommand` (see end of this page)
 - Configure multiple GUIs that access each other
 
 This repository is fairly new. If you experience any issues, please open an issue above or contact eochgls@web.de. Commits welcome.
