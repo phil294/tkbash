@@ -10,7 +10,7 @@
 set -e # exit on error
 set -m # enable job control (so wishpipe job has its own group)
 
-TMP="/tmp/__tkbash1.0_"
+TMP="/tmp/__tkbash1.0_" # todo mktemp
 mkdir -p "$TMP"
 
 show_help() {
@@ -268,34 +268,32 @@ wish_exec() {
 	echo "$1" >"$WISH_PIPE"
 }
 
-if ! [[ -p "$WISH_PIPE" ]]; then
-	# gui does not exist yet.
+if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
+	# gui does not exist yet. initialize stuff
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
 	(cat 0<> "$WISH_PIPE" |wish) & # s. https://unix.stackexchange.com/a/392754/103120
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
-	# create listenerhandler: execute respective script on command / bind etc.
-	# in wish, every element is a window
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
-	# used by -command options below:
 	wish_exec "
-		proc onaction {trigger} {
+		proc onaction {trigger} { ` # create listenerhandler: execute respective script on command / bind etc. used by -command options below. `
 		if { [file exists ${commandfile_tcl}] == 1} {
 				exec ${commandfile_tcl} >@ stdout 2>@ stderr &
 			}
-		}"
-	# default: window title = script name
-	wish_exec "wm title . $(tcl_str "$(basename "$0")")"
-	# on exit: clean up
-	wish_exec "
-		proc onexit {} {
+		}
+		wm title . $(tcl_str "$(basename "$0")") ` # default: window title = script name `
+		proc onexit {} { ` # on exit: clean up `
 			file delete $(tcl_str "$WISH_PIPE")
 			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
 			exec kill -TERM -$wish_group_id
 		}
-		wm protocol . WM_DELETE_WINDOW {
+		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
 			onexit
-		}"
+		}
+		proc ignore_event {} {
+			break
+		}
+		"
 fi
 
 wish_get() {
@@ -327,7 +325,7 @@ wish_get() {
 		) >/dev/null 2>&1 &
 		local terminator_pid=$!
 		wait $wait_for_response_pid || return 22
-		kill $terminator_pid
+		kill $terminator_pid # doesnt work for some reason, but does not really matter (stops after 1 sec anyway)
 	) || return 22
 
 	# parse response
