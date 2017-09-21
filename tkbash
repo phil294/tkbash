@@ -77,6 +77,8 @@ show_help() {
 	echo -e "\t\t\t\tThe text that will be displayed on the button."
 	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
 	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
+	echo -e "\t\t\t\tThe user cannot type newlines."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tYou cannot retrieve any value from a button."
 	echo -e "\t${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea"
@@ -166,10 +168,11 @@ DISABLED=
 IMAGE=
 GROUP=
 HOTKEY=
+IGNORE_RETURN=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -205,6 +208,7 @@ while true; do
 		--disabled) DISABLED="$2" && shift 2 ;;
 		--image) IMAGE="$2" && shift 2 ;;
 		--group) GROUP="$2" && shift 2 ;;
+		--ignore-return|--ignore-newline|--entry|--one-row) IGNORE_RETURN="1" && shift ;;
 		--)
 			shift
 			break ;;
@@ -289,9 +293,6 @@ if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
 		}
 		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
 			onexit
-		}
-		proc ignore_event {} {
-			break
 		}
 		"
 fi
@@ -413,6 +414,7 @@ handle_element_commands() {
 				# wish_exec "ttk::scrollbar $(tcl_esc .$VAR_NAME)_scroll -command \"$(tcl_esc .$VAR_NAME) yview\"" # not compatible with basic pack commands below.
 			fi
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
+			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $(tcl_esc .$VAR_NAME) \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .$VAR_NAME)"
