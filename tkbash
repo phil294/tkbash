@@ -8,7 +8,6 @@
 # --"-"--
 
 set -e # exit on error
-set -m # enable job control (so wishpipe job has its own group)
 
 TMP="/tmp/__tkbash1.0_" # todo mktemp
 mkdir -p "$TMP"
@@ -276,7 +275,9 @@ if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
 	# gui does not exist yet. initialize stuff
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
+	set -m # enable job control (so wishpipe job has its own group)
 	(cat 0<> "$WISH_PIPE" |wish) & # s. https://unix.stackexchange.com/a/392754/103120
+	set +m
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
 	wish_exec "
