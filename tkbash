@@ -248,6 +248,7 @@ else
 	echo "Too many arguments!" && die 22
 fi
 [[ "$HOTKEY" == *" "* ]] && echo "hotkey name cannot contain spaces!" && die 21
+[[ "$GROUP" == *" "* ]] && echo "group name cannot contain spaces!" && die 21
 #################################
 
 tcl_esc() {
@@ -482,8 +483,8 @@ handle_get_commands() {
 		tcheckbutton)
 			wish_exec "
 				set check_value \"\"
-				if {[info exists $(tcl_str "$VAR_NAME")]} {
-					set check_value $(tcl_str "\$$VAR_NAME")
+				if {[info exists $(tcl_esc "$VAR_NAME")]} {
+					set check_value \$$(tcl_esc "$VAR_NAME")
 				}"
 			echo "$(wish_get "exec echo \$check_value")"
 			;;
@@ -491,8 +492,8 @@ handle_get_commands() {
 			local radio_var="$(wish_get "$(tcl_esc .$VAR_NAME) cget -variable")"
 			wish_exec "
 				set radio_value \"\"
-				if {[info exists $(tcl_str "$radio_var")]} {
-					set radio_value $(tcl_str "\$$radio_var")
+				if {[info exists $(tcl_esc "$radio_var")]} {
+					set radio_value \$$(tcl_esc "$radio_var")
 				}"
 			echo "$(wish_get "exec echo \$radio_value")"
 			;;
