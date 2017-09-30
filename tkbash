@@ -103,34 +103,40 @@ show_help() {
 	echo -e "\t\t\tYou cannot retrieve any value from an image."
 	echo -e "\t\tNote: Internally, this does the same like 'label', meaning these two element names are interchangeable."
 	echo -e "\t${COLOR_BOLD}checkbutton${COLOR_RESET} / checkbox / check / tick / toggle"
-	echo -e "\t\tFor boolean values."
+	echo -e "\t\tFor boolean values. If neither --checked nor --unchecked is passed, the checkbutton is in a neither-state (pristine)"
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the text to be displayed next to the tick."
 	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
 	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\t\t${COLOR_BOLD}--selected, --checked${COLOR_RESET}"
+	echo -e "\t\t\t\tSet selected state to 1."
+	echo -e "\t\t\t${COLOR_BOLD}--deselected, --unchecked${COLOR_RESET}"
+	echo -e "\t\t\t\tSet selected state to 0."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tPrints 1 when checked, 0 when unchecked, nothing when pristine."
 	echo -e "\t${COLOR_BOLD}radiobutton${COLOR_RESET} / radio"
 	echo -e "\t\tMultiple radiobuttons form a group. Only one radiobutton in a group can be active at the same time."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t[required] ${COLOR_BOLD}--group${COLOR_RESET} <group-id>"
-	echo -e "\t\t\t\tAssign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it gets ignored."
+	echo -e "\t\t\t\tAssign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it is ignored."
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the text to be displayed next to the radiobutton."
 	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
 	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
+	echo -e "\t\t\t${COLOR_BOLD}--selected, --checked${COLOR_RESET}"
+	echo -e "\t\t\t\tSet this radio as the selected one from its group."
 	echo -e "\t\tGet:"
-	echo -e "\t\t\tEvery radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton."
+	echo -e "\t\t\tEvery radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton is created."
 	echo -e "\t${COLOR_BOLD}combobox${COLOR_RESET} / select / dropdown / dropdownmenu"
 	echo -e "\t\tSelect one of many values. Behaves like a classical HTML-select (the Tk-state 'readonly' is active)."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tA pipe-delimited list (e.g. \"option1|option2|option3\") of options for this select which the user will be able to choose from."
+	echo -e "\t\t\t\tA pipe-delimited list (e.g. \"option1|option2|option3\") of options for this select which the user will be able to choose from. Set the default value by appending two pipes. For example \"option1|option2||option3\" to have option2 be selected by default. Otherwise, the first one will be selected."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tPrints the selected value, e.g. \"option1\" when the first value is chosen."
-	echo -e "\t--disabled"
-	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels."
+	echo -e "\t--disabled <switch>"
+	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
 	echo
 	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed."
 }
@@ -168,10 +174,11 @@ IMAGE=
 GROUP=
 HOTKEY=
 IGNORE_RETURN=
+SELECTED=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -208,6 +215,8 @@ while true; do
 		--image) IMAGE="$2" && shift 2 ;;
 		--group) GROUP="$2" && shift 2 ;;
 		--ignore-return|--ignore-newline|--entry|--one-row) IGNORE_RETURN="1" && shift ;;
+		--selected|--select|--check|--checked) SELECTED=1 && shift ;;
+		--unselected|--deselected|--unselect|--deselect|--uncheck|--unchecked) SELECTED=0 && shift ;;
 		--)
 			shift
 			break ;;
@@ -427,6 +436,7 @@ handle_element_commands() {
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
 			if [ $IS_NEW = 1 ]; then
@@ -435,29 +445,37 @@ handle_element_commands() {
 				wish_exec "
 					set matched_children \"\"
 					foreach {child} [winfo children .] {
-						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_str "$GROUP") } {
+						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_esc "$GROUP") } {
 							append matched_children \"\n\${child}\"
 						}
 					}"
-				groupmembers_amount=$(echo "$(wish_get "exec echo \"\$matched_children\"")" |egrep . |wc -l)
+				local groupmembers_amount=$(echo "$(wish_get "exec echo \"\$matched_children\"")" |egrep . |wc -l)
 				#zero-indexed:
-				radionumber=$((${groupmembers_amount})) # also considers empty response
+				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
-				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_str "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
+				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
 			 fi
 			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			if [ "$SELECTED" == 1 ]; then
+				local radionumber="$(wish_get "$(tcl_esc .$VAR_NAME) cget -value")"
+				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
+			fi
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::combobox $(tcl_esc .$VAR_NAME) -state readonly" # todo change command would be helpful
 			if [ -n "$CONTENT" ]; then
 				IFS='|' && arr=($CONTENT) && unset IFS
 				[[ "${#arr}" == 0 ]] && echo "invalid content specified. should have form \"option1|option2|option3...\"" && die 20
-				values=
-				for i in "${arr[@]}"; do
-					values="${values} $(tcl_str "$i")"
+				local values=
+				local selected_index=0
+				for i in "${!arr[@]}"; do
+					local val="${arr[$i]}"
+					[ -z "$val" ] && selected_index=$((i-1)) || # empty val = two pipes in a row = use prev value as selected one.
+						values="${values} $(tcl_str "$val")"
 				done
 				wish_exec "$(tcl_esc .$VAR_NAME) configure -values [list $values]"
+				wish_exec "$(tcl_esc .$VAR_NAME) current $selected_index"
 			fi
 			;;
 		*)

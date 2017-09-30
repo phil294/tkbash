@@ -1,5 +1,5 @@
 # tkbash
-Build fancy graphical user interfaces with simple bash commands!
+Build fancy graphical user interfaces with simple bash commands! Inspired by [AutoHotkey](https://autohotkey.com/docs/commands/Gui.htm)'s GUI.
 ## Bash wrapper for Tcl/Tk gui
 
 ![tkbash-gui](https://i.imgur.com/J8XUtSB.png)
@@ -84,7 +84,7 @@ Set options for the entire interface / window as described above. You can set wi
 		Hide the window by detaching it from the Window Manager.
 	--show
 		Set the window visible by re-attaching it to the Winodow Manager.
-	--close, --exit
+	--close, --exit, --quit, --destroy
 		Destroy, close, exit, die, kill, waste the window.
 	--hotkey, --bind, --shortcut
 		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'"
@@ -96,6 +96,8 @@ ELEMENTS
 				The text that will be displayed on the button.
 			-c, --command <command>
 				Bash code to be executed when the element is clicked.
+			--ignore-return, --ignore-newline, --entry, --one-row
+				The user cannot type newlines.
 		Get:
 			You cannot retrieve any value from a button.
 	text / input / edit / textfield / textarea
@@ -121,37 +123,42 @@ ELEMENTS
 			You cannot retrieve any value from an image.
 		Note: Internally, this does the same like 'label', meaning these two element names are interchangeable.
 	checkbutton / checkbox / check / tick / toggle
-		For boolean values.
+		For boolean values. If neither --checked nor --unchecked is passed, the checkbutton is in a neither-state (pristine)
 		Options:
 			-t, --text, --content <text>
 				Set the text to be displayed next to the tick.
 			-c, --command <command>
 				Bash code to be executed when the element is clicked.
+			--selected, --checked
+				Set selected state to 1.
+			--deselected, --unchecked
+				Set selected state to 0.
 		Get:
 			Prints 1 when checked, 0 when unchecked, nothing when pristine.
 	radiobutton / radio
 		Multiple radiobuttons form a group. Only one radiobutton in a group can be active at the same time.
 		Options:
 			[required] --group <group-id>
-				Assign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it gets ignored.
+				Assign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it is ignored.
 			-t, --text, --content <text>
 				Set the text to be displayed next to the radiobutton.
 			-c, --command <command>
 				Bash code to be executed when the element is clicked.
+			--selected, --checked
+				Set this radio as the selected one from its group.
 		Get:
-			Every radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton.
+			Every radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton is created.
 	combobox / select / dropdown / dropdownmenu
 		Select one of many values. Behaves like a classical HTML-select (the Tk-state 'readonly' is active).
 		Options:
 			-t, --text, --content <text>
-				A pipe-delimited list (e.g. "option1|option2|option3") of options for this select which the user will be able to choose from.
+				A pipe-delimited list (e.g. "option1|option2|option3") of options for this select which the user will be able to choose from. Set the default value by appending two pipes. For example "option1|option2||option3" to have option2 be selected by default. Otherwise, the first one will be selected.
 		Get:
 			Prints the selected value, e.g. "option1" when the first value is chosen.
-	--disabled
-		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels.
+	--disabled <switch>
+		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1.
 
-Note on the -c, --command option: The command passed will be executed asynchronously from within a subshell. Thus, session variables cannot be accessed.
-
+Note on the -c, --command option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed.
 ```
 
 ### Coloring elements
