@@ -182,7 +182,8 @@ SELECTED=
 ON_CLOSE=
 EXIST=
 
-########################### OPTION PARSING
+########################### OPTION PARSING & VARIABLES INITIALIZATION
+
 OPTIONS=w:h:x:X:y:Y:c:t:
 LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
@@ -235,6 +236,9 @@ while true; do
 done
 
 GUI_ID="$1"
+WISH_PIPE="${TMP}/${GUI_ID}_wishpipe"
+#WISH_OUTFILE="${TMP}/${GUI_ID}_outfile"
+COMMUNICATION_FILE="${TMP}/${GUI_ID}_communicationfile"
 GET_REQUEST=0
 [ -z "$GUI_ID" ] && echo "specify gui id!" && die 1
 require_variable() {
@@ -266,7 +270,8 @@ else
 fi
 [[ "$HOTKEY" == *" "* ]] && echo "hotkey name cannot contain spaces!" && die 21
 [[ "$GROUP" == *" "* ]] && echo "group name cannot contain spaces!" && die 21
-#################################
+
+################################# helper functions
 
 tcl_esc() {
 	echo "$1" |sed 's/\\/\\\\/g' |sed 's/"/\\"/g' |sed 's/\$/\\\$/g' |sed 's/\[/\\\[/g' |sed 's/\]/\\\]/g' |sed 's/{/\\{/g' |sed 's/}/\\}/g'
@@ -280,51 +285,10 @@ write_command_file() {
 	echo $'#!/bin/bash\n' "${2}" > "${TMP}/${GUI_ID}_${1}_command" && chmod +x "${TMP}/${GUI_ID}_${1}_command"
 }
 
-WISH_PIPE="${TMP}/${GUI_ID}_wishpipe"
-WISH_OUTFILE="${TMP}/${GUI_ID}_outfile"
-COMMUNICATION_FILE="${TMP}/${GUI_ID}_communicationfile"
-
 wish_exec() {
 	# communicate unidirectionally with running wish process
 	echo "$1" >"$WISH_PIPE"
 }
-
-if [ -n "$EXIST" ]; then
-	[[ -p "$WISH_PIPE" ]] && echo 1 || echo 0
-	exit 0
-fi
-
-if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
-	# gui does not exist yet. initialize stuff
-	# set up new pipe
-	mkfifo "$WISH_PIPE"
-	set -m # enable job control (so wishpipe job has its own group)
-	(cat 0<> "$WISH_PIPE" |wish) & # s. https://unix.stackexchange.com/a/392754/103120
-	set +m
-	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
-	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
-	wish_exec "
-		proc onaction {trigger} { ` # create listenerhandler: execute respective script on command / bind etc. used by -command options below. `
-			if { [file exists ${commandfile_tcl}] == 1} {
-				return [ exec ${commandfile_tcl} >@ stdout 2>@ stderr & ]
-			}
-			return -1
-		}
-		wm title . $(tcl_str "$(basename "$0")") ` # default: window title = script name `
-		proc onexit {} { ` # on exit: clean up `
-			set pid [ onaction onclose ]
-			while {[file exists /proc/\$pid]} {
-				exec /bin/sleep 0.1 ` # onclose action needs to terminate before remaining scripts and pipe can be deleted `
-			}
-			file delete $(tcl_str "$WISH_PIPE")
-			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
-			exec kill -TERM -$wish_group_id
-		}
-		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
-			onexit
-		}
-		"
-fi
 
 wish_get() {
 	# communicate bidirectionally with running wish process
@@ -366,9 +330,44 @@ wish_get() {
 	return 0
 }
 
-#################
-#################
-#################
+################################# do things
+
+if [ -n "$EXIST" ]; then
+	[[ -p "$WISH_PIPE" ]] && echo 1 || echo 0
+	exit 0
+fi
+
+if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
+	# gui does not exist yet. initialize stuff
+	# set up new pipe
+	mkfifo "$WISH_PIPE"
+	set -m # enable job control (so wishpipe job has its own group)
+	(cat 0<> "$WISH_PIPE" |wish) & # s. https://unix.stackexchange.com/a/392754/103120
+	set +m
+	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
+	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
+	wish_exec "
+		proc onaction {trigger} { ` # create listenerhandler: execute respective script on command / bind etc. used by -command options below. `
+			if { [file exists ${commandfile_tcl}] == 1} {
+				return [ exec ${commandfile_tcl} >@ stdout 2>@ stderr & ]
+			}
+			return -1
+		}
+		wm title . $(tcl_str "$(basename "$0")") ` # default: window title = script name `
+		proc onexit {} { ` # on exit: clean up `
+			set pid [ onaction onclose ]
+			while {[file exists /proc/\$pid]} {
+				exec /bin/sleep 0.1 ` # onclose action needs to terminate before remaining scripts and pipe can be deleted `
+			}
+			file delete $(tcl_str "$WISH_PIPE")
+			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
+			exec kill -TERM -$wish_group_id
+		}
+		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
+			onexit
+		}
+		"
+fi
 
 handle_window_commands() {
 	[ -n "$TITLE" ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
