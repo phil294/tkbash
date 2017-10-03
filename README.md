@@ -88,6 +88,10 @@ Set options for the entire interface / window as described above. You can set wi
 		Destroy, close, exit, die, kill, waste the window.
 	--hotkey, --bind, --shortcut
 		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'"
+	--onclose
+		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'"
+	--exist
+		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 
 ELEMENTS
 	button / submit

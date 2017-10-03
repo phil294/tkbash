@@ -70,6 +70,8 @@ show_help() {
 	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'\""
 	echo -e "\t${COLOR_BOLD}--onclose${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclose --command 'echo tkbash now exits.'\""
+	echo -e "\t${COLOR_BOLD}--exist${COLOR_RESET}"
+	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
 	echo
 	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit"
@@ -178,10 +180,11 @@ HOTKEY=
 IGNORE_RETURN=
 SELECTED=
 ON_CLOSE=
+EXIST=
 
 ########################### OPTION PARSING
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -221,6 +224,7 @@ while true; do
 		--selected|--select|--check|--checked) SELECTED=1 && shift ;;
 		--unselected|--deselected|--unselect|--deselect|--uncheck|--unchecked) SELECTED=0 && shift ;;
 		--onclose|--onclosed) ON_CLOSE=1 && shift ;;
+		--exist|--exists) EXIST=1 && shift ;;
 		--)
 			shift
 			break ;;
@@ -284,6 +288,11 @@ wish_exec() {
 	# communicate unidirectionally with running wish process
 	echo "$1" >"$WISH_PIPE"
 }
+
+if [ -n "$EXIST" ]; then
+	[[ -p "$WISH_PIPE" ]] && echo 1 || echo 0
+	exit 0
+fi
 
 if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
 	# gui does not exist yet. initialize stuff
