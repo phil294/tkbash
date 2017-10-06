@@ -152,38 +152,6 @@ die() {
 	exit "$@"
 }
 
-GUI_ID=
-ACTION=
-X=
-Y=
-RELX=
-RELY=
-WIDTH=
-HEIGHT=
-VAR_NAME=
-COMMAND=
-ALWAYS_ON_TOP=
-MAXIMIZE=
-RESIZABLE=
-THEME=
-TITLE=
-ICONIFY=
-HIDE=
-SHOW=
-CLOSE=
-ICON=
-ALPHA=
-CONTENT=
-TKCOMMAND=
-DISABLED=
-IMAGE=
-GROUP=
-HOTKEY=
-IGNORE_RETURN=
-SELECTED=
-ON_CLOSE=
-EXIST=
-
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
@@ -265,7 +233,7 @@ elif [ $# = 3 ]; then
 	VAR_NAME="$3"
 	require_variable
 elif [ $# = 1 ]; then
-	[ -z "$TKCOMMAND" ] && require_variable # = exit	
+	[ ! -v TKCOMMAND ] && require_variable # = exit
 	# else: tkcommand.
 else
 	echo "Too many arguments!" && die 22
@@ -373,7 +341,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 fi
 
 handle_window_commands() {
-	[ -n "$TITLE" ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
+	[ -v TITLE ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
   if ([ -n "$WIDTH" ] && [ -n "$HEIGHT" ]); then
     if ([ -n "$X" ] && [ -n "$Y" ]); then
       wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")"
@@ -382,7 +350,7 @@ handle_window_commands() {
     fi
   fi
 	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
-	[ -n "$MAXIMIZE" ] && wish_exec "wm attributes . -fullscreen $(tcl_str "$MAXIMIZE")"
+	[ -n "$MAXIMIZE" ] && wish_exec "wm attributes . -fullscreen $MAXIMIZE"
 	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
 	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
 	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
@@ -392,12 +360,12 @@ handle_window_commands() {
 	[ -n "$SHOW" ] && wish_exec "wm deiconify ."
 	[ -n "$CLOSE" ] && wish_exec "onexit"
 	if [ -n "$HOTKEY" ]; then
-		[ -z "$COMMAND" ] && echo "hotkey command also needs the --command option." && die 23
+		[ ! -v COMMAND ] && echo "hotkey command also needs the --command option." && die 23
 		wish_exec "bind . <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
 		write_command_file "$HOTKEY" "$COMMAND"
 	fi
 	if [ -n "$ON_CLOSE" ]; then
-		[ -z "$COMMAND" ] && echo "on-close command also needs the --command option." && die 23
+		[ ! -v COMMAND ] && echo "on-close command also needs the --command option." && die 23
 		write_command_file "onclose" "$COMMAND"
 	fi
 	return 0
@@ -439,27 +407,27 @@ handle_element_commands() {
 			# set up element
 			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .$VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
 			# parse non-place options
-			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			# create command script if command is set
-			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
 				wish_exec "tk::text $(tcl_esc .$VAR_NAME)" # -yscrollcommand \"$(tcl_esc .$VAR_NAME)_scroll set\"
 				# wish_exec "ttk::scrollbar $(tcl_esc .$VAR_NAME)_scroll -command \"$(tcl_esc .$VAR_NAME) yview\"" # not compatible with basic pack commands below.
 			fi
-			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $(tcl_esc .$VAR_NAME) \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .$VAR_NAME)"
-			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$IMAGE" ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v IMAGE ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
-			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
@@ -479,8 +447,8 @@ handle_element_commands() {
 				###
 				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
 			 fi
-			[ -n "$CONTENT" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			if [ "$SELECTED" == 1 ]; then
 				local radionumber="$(wish_get "$(tcl_esc .$VAR_NAME) cget -value")"
 				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
@@ -504,7 +472,7 @@ handle_element_commands() {
 				wish_exec "$(tcl_esc .$VAR_NAME) configure -values [list $values]"
 				wish_exec "$(tcl_esc .$VAR_NAME) current $selected_index"
 			fi
-			[ -n "$COMMAND" ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
 			;;
 		*)
 			echo "element >$TYPE< not supported." ; die 5
@@ -513,7 +481,7 @@ handle_element_commands() {
 	# disabled option
 	if [ -n "$DISABLED" ]; then
 		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
-		[ -n "$DISABLED" ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -state ${DISABLED}"
+		wish_exec "$(tcl_esc .$VAR_NAME) configure -state ${DISABLED}"
 	fi
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
@@ -553,7 +521,7 @@ handle_get_commands() {
 	return 0
 }
 
-if [ -n "$TKCOMMAND" ]; then
+if [ -v TKCOMMAND ]; then
 	handle_tk_commands
 elif [ "$ACTION" = "window" ]; then
 	handle_window_commands

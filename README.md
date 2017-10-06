@@ -7,7 +7,7 @@ Build fancy graphical user interfaces with simple bash commands! Inspired by [Au
 tkbash 1 label label1 --relx 0.4 -y 10 -w 130 -h 20 -t "I like bananas."
 tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green|Blue"
 tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
-    tkbash 1 text1 -t \" \"
+    tkbash 1 text1 -t ''
     notify-send \"You selected color \$(tkbash 1 get select1)! \""
 tkbash 1 text text1 -x 165 -y 105 -w 120 -h 120 -t "Yorem Lipsum"
 tkbash 1 image image1 -x 10 -y 60 -w 125 -h 120 --image "kitten.png"
@@ -100,8 +100,6 @@ ELEMENTS
 				The text that will be displayed on the button.
 			-c, --command <command>
 				Bash code to be executed when the element is clicked.
-			--ignore-return, --ignore-newline, --entry, --one-row
-				The user cannot type newlines.
 		Get:
 			You cannot retrieve any value from a button.
 	text / input / edit / textfield / textarea
@@ -109,6 +107,8 @@ ELEMENTS
 		Options:
 			-t, --text, --content <text>
 				Set the contents of the text field.
+			--ignore-return, --ignore-newline, --entry, --one-row
+				The user cannot type newlines.
 		Get:
 			Prints the contents of the text field.
 	label
@@ -157,6 +157,8 @@ ELEMENTS
 		Options:
 			-t, --text, --content <text>
 				A pipe-delimited list (e.g. "option1|option2|option3") of options for this select which the user will be able to choose from. Set the default value by appending two pipes. For example "option1|option2||option3" to have option2 be selected by default. Otherwise, the first one will be selected.
+			-c, --command <command>
+				Bash code to be executed when an item is chosen.
 		Get:
 			Prints the selected value, e.g. "option1" when the first value is chosen.
 	--disabled <switch>
