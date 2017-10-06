@@ -9,7 +9,7 @@
 
 set -e # exit on error
 
-TMP="$(mktemp -d)"
+TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
 
 show_help() {
