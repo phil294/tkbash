@@ -80,8 +80,6 @@ show_help() {
 	echo -e "\t\t\t\tThe text that will be displayed on the button."
 	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
 	echo -e "\t\t\t\tBash code to be executed when the element is clicked."
-	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
-	echo -e "\t\t\t\tThe user cannot type newlines."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tYou cannot retrieve any value from a button."
 	echo -e "\t${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea"
@@ -89,6 +87,8 @@ show_help() {
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the contents of the text field."
+	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
+	echo -e "\t\t\t\tThe user cannot type newlines."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tPrints the contents of the text field."
 	echo -e "\t${COLOR_BOLD}label${COLOR_RESET}"
@@ -339,7 +339,7 @@ if [ -n "$EXIST" ]; then
 	exit 0
 fi
 
-if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
+if ! [[ -p "$WISH_PIPE" ]]; then
 	# gui does not exist yet. initialize stuff
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
