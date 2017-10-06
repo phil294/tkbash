@@ -344,7 +344,10 @@ if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
 	set -m # enable job control (so wishpipe job has its own group)
-	(cat 0<> "$WISH_PIPE" |wish) & # s. https://unix.stackexchange.com/a/392754/103120
+	(
+		trap "rm \"${TMP}/${GUI_ID}\"*; exit 0" TERM INT # clean up
+		cat 0<> "$WISH_PIPE" |wish # s. https://unix.stackexchange.com/a/392754/103120
+	) &
 	set +m
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
@@ -361,9 +364,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then # todo on prev exit error ?
 			while {[file exists /proc/\$pid]} {
 				exec /bin/sleep 0.1 ` # onclose action needs to terminate before remaining scripts and pipe can be deleted `
 			}
-			file delete $(tcl_str "$WISH_PIPE")
-			file delete {*}[glob -nocomplain $(tcl_str "${TMP}/${GUI_ID}*")]
-			exec kill -TERM -$wish_group_id
+			exec kill -INT -$wish_group_id
 		}
 		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
 			onexit
