@@ -219,7 +219,6 @@ GET_REQUEST=0
 require_variable() {
 	[ -z "$VAR_NAME" ] && echo "specify variable name!" && die 14
 	[[ "$VAR_NAME" == *" "* ]] && echo "variable cannot contain spaces!" && die 21
-
 	return 0
 }
 if [ "$2" = "get" ] && [ $# = 3 ]; then
@@ -306,6 +305,8 @@ wish_get() {
 }
 
 ################################# do things
+
+WVAR_ESC="$(tcl_esc .w.$VAR_NAME)"
 
 if [ -n "$EXIST" ]; then
 	[[ -p "$WISH_PIPE" ]] && echo 1 || echo 0
@@ -398,8 +399,8 @@ analyse_varname() {
 	# always get type of given variable:
 	wish_exec "
 		set windowclass \"\"
-		if {[winfo exists $(tcl_esc .w.$VAR_NAME)]} {
-			set windowclass [winfo class $(tcl_esc .w.$VAR_NAME)]
+		if {[winfo exists $WVAR_ESC]} {
+			set windowclass [winfo class $WVAR_ESC]
 		}"
 	resp="$(wish_get "exec echo \$windowclass")"
 	if [ -n "$resp" ] ; then
@@ -421,28 +422,28 @@ handle_element_commands() {
 	case "$TYPE" in
 		tbutton|button|ttk::button|submit)
 			# set up element
-			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .w.$VAR_NAME) -command \"onaction $(tcl_esc .w.$VAR_NAME)\""
+			[ $IS_NEW = 1 ] && wish_exec "ttk::button $WVAR_ESC -command \"onaction $WVAR_ESC\""
 			# parse non-place options
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			# create command script if command is set
 			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "tk::text $(tcl_esc .w.$VAR_NAME)" # -yscrollcommand \"$(tcl_esc .w.$VAR_NAME)_scroll set\"
-				# wish_exec "ttk::scrollbar $(tcl_esc .w.$VAR_NAME)_scroll -command \"$(tcl_esc .w.$VAR_NAME) yview\"" # not compatible with basic pack commands below.
+				wish_exec "tk::text $WVAR_ESC" # -yscrollcommand \"$WVAR_ESC_scroll set\"
+				# wish_exec "ttk::scrollbar $WVAR_ESC_scroll -command \"$WVAR_ESC yview\"" # not compatible with basic pack commands below.
 			fi
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .w.$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
-			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $(tcl_esc .w.$VAR_NAME) \"<Return>\" { break }"
+			[ -v CONTENT ] && wish_exec "$WVAR_ESC delete 1.0 end" && wish_exec "$WVAR_ESC insert 1.0 $(tcl_str "$CONTENT")"
+			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $WVAR_ESC \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .w.$VAR_NAME)"
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -v IMAGE ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
+			[ $IS_NEW = 1 ] && wish_exec "ttk::label $WVAR_ESC"
+			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
+			[ -v IMAGE ] && wish_exec "image create photo imgobj$WVAR_ESC -file $(tcl_str "${IMAGE}")" && wish_exec "$WVAR_ESC configure -image imgobj$WVAR_ESC"
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .w.$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .w.$VAR_NAME)\""
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
+			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
@@ -461,19 +462,19 @@ handle_element_commands() {
 				#zero-indexed:
 				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
-				wish_exec "ttk::radiobutton $(tcl_esc .w.$VAR_NAME) -variable $(tcl_esc "${GROUP}") -command \"onaction $(tcl_esc .w.$VAR_NAME)\" -value ${radionumber}"
+				wish_exec "ttk::radiobutton $WVAR_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction $WVAR_ESC\" -value ${radionumber}"
 			 fi
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			if [ "$SELECTED" == 1 ]; then
-				local radionumber="$(wish_get "$(tcl_esc .w.$VAR_NAME) cget -value")"
+				local radionumber="$(wish_get "$WVAR_ESC cget -value")"
 				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
 			fi
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "ttk::combobox $(tcl_esc .w.$VAR_NAME) -state readonly"
-				wish_exec "bind $(tcl_esc .w.$VAR_NAME) <<ComboboxSelected>> \"onaction $(tcl_esc .w.$VAR_NAME)\""
+				wish_exec "ttk::combobox $WVAR_ESC -state readonly"
+				wish_exec "bind $WVAR_ESC <<ComboboxSelected>> \"onaction $WVAR_ESC\""
 			fi
 			if [ -n "$CONTENT" ]; then
 				IFS='|' && arr=($CONTENT) && unset IFS
@@ -485,8 +486,8 @@ handle_element_commands() {
 					[ -z "$val" ] && selected_index=$((i-1)) || # empty val = two pipes in a row = use prev value as selected one.
 						values="${values} $(tcl_str "$val")"
 				done
-				wish_exec "$(tcl_esc .w.$VAR_NAME) configure -values [list $values]"
-				wish_exec "$(tcl_esc .w.$VAR_NAME) current $selected_index"
+				wish_exec "$WVAR_ESC configure -values [list $values]"
+				wish_exec "$WVAR_ESC current $selected_index"
 			fi
 			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
@@ -497,18 +498,18 @@ handle_element_commands() {
 	# disabled option
 	if [ -n "$DISABLED" ]; then
 		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
-		wish_exec "$(tcl_esc .w.$VAR_NAME) configure -state ${DISABLED}"
+		wish_exec "$WVAR_ESC configure -state ${DISABLED}"
 	fi
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
-		wish_exec "place $(tcl_esc .w.$VAR_NAME) ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
+		wish_exec "place $WVAR_ESC ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
 	return 0
 }
 
 handle_get_commands() {
 	case "$TYPE" in
 		text)
-			echo "$(wish_get "$(tcl_esc .w.$VAR_NAME) get 1.0 end")"
+			echo "$(wish_get "$WVAR_ESC get 1.0 end")"
 			;;
 		tcheckbutton)
 			wish_exec "
@@ -519,7 +520,7 @@ handle_get_commands() {
 			echo "$(wish_get "exec echo \$check_value")"
 			;;
 		tradiobutton)
-			local radio_var="$(wish_get "$(tcl_esc .w.$VAR_NAME) cget -variable")"
+			local radio_var="$(wish_get "$WVAR_ESC cget -variable")"
 			wish_exec "
 				set radio_value \"\"
 				if {[info exists $(tcl_esc "$radio_var")]} {
@@ -528,7 +529,7 @@ handle_get_commands() {
 			echo "$(wish_get "exec echo \$radio_value")"
 			;;
 		tcombobox)
-			echo "$(wish_get "$(tcl_esc .w.$VAR_NAME) get")"
+			echo "$(wish_get "$WVAR_ESC get")"
 			;;
 		*)
 			echo "get-method for this element not supported :(" && exit 12
