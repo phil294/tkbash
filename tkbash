@@ -9,6 +9,15 @@
 
 set -e # exit on error
 
+die() {
+	echo "call 'tkbash --help' for help."
+	exit "$@"
+}
+
+BASH_MINIMUM_VERSION="4.2"
+[[ $(sort -V <<< $BASH_VERSION$'\n'$BASH_MINIMUM_VERSION |head -1) != $BASH_MINIMUM_VERSION ]] && echo "Minimum bash version required: $BASH_MINIMUM_VERSION" && die 24
+
+
 TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
 
@@ -69,7 +78,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'\""
 	echo -e "\t${COLOR_BOLD}--onclose${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclose --command 'echo tkbash now exits.'\""
+	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclose --command 'echo tkbash now exits.'\" The GUI will only exit once the --command has finished."
 	echo -e "\t${COLOR_BOLD}--exist${COLOR_RESET}"
 	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
 	echo
@@ -88,17 +97,17 @@ show_help() {
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the contents of the text field."
 	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
-	echo -e "\t\t\t\tThe user cannot type newlines."
+	echo -e "\t\t\t\tThe user cannot type newlines. If combined with an appropriate height, this could also be used as a form input."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tPrints the contents of the text field."
-	echo -e "\t${COLOR_BOLD}label${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}label${COLOR_RESET} / p"
 	echo -e "\t\tA label element displays plain text somewhere on the gui."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the contents of the label."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tYou cannot retrieve any value from a label."
-	echo -e "\t${COLOR_BOLD}image${COLOR_RESET} / picture / img / bmp / bitmap / p"
+	echo -e "\t${COLOR_BOLD}image${COLOR_RESET} / picture / img / bmp / bitmap"
 	echo -e "\t\tDisplay an image."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}--image${COLOR_RESET} <path>"
@@ -145,11 +154,6 @@ show_help() {
 	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
 	echo
 	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed."
-}
-
-die() {
-	echo "call 'tkbash --help' for help."
-	exit "$@"
 }
 
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
