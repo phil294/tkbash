@@ -35,7 +35,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> window [-options...]${COLOR_RESET}"
 	echo -e "\t\tSet window properties."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
-	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize . 200 200'\"."
+	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\"."
 	echo
 	echo
 	echo -e "\t\t${COLOR_BOLD}gui_id${COLOR_RESET}"
@@ -112,7 +112,7 @@ show_help() {
 	echo -e "\t\tDisplay an image."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}--image${COLOR_RESET} <path>"
-	echo -e "\t\t\t\tPath of the image to be shown."
+	echo -e "\t\t\t\tPath of the image to be shown. Note: currently seems to only support png. This needs to be fixed somehow."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tYou cannot retrieve any value from an image."
 	echo -e "\t\tNote: Internally, this does the same like 'label', meaning these two element names are interchangeable."
@@ -325,48 +325,59 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
 	wish_exec "
-		proc onaction {trigger} { ` # create listenerhandler: execute respective script on command / bind etc. used by -command options below. `
+		# hide default window
+		wm withdraw .
+		# custom toplevel: .w
+		toplevel .w
+		# wm overrideredirect .w 1
+		# wm attribute .w -type tooltip
+		# create listenerhandler: execute respective script on command / bind etc. used by -command options below.
+		proc onaction {trigger} {
 			if { [file exists ${commandfile_tcl}] == 1} {
 				return [ exec ${commandfile_tcl} >@ stdout 2>@ stderr & ]
 			}
 			return -1
 		}
-		wm title . $(tcl_str "$(basename "$0")") ` # default: window title = script name `
-		proc onexit {} { ` # on exit: clean up `
+		# default: window title = script name
+		wm title .w $(tcl_str "$(basename "$0")")
+		# on exit: clean up
+		proc onexit {} {
 			set pid [ onaction onclose ]
 			while {[file exists /proc/\$pid]} {
-				exec /bin/sleep 0.1 ` # onclose action needs to terminate before remaining scripts and pipe can be deleted `
+				# onclose action needs to terminate before remaining scripts and pipe can be deleted
+				exec /bin/sleep 0.1
 			}
 			exec kill -INT -$wish_group_id
 		}
-		wm protocol . WM_DELETE_WINDOW { ` # on window close: call custom exit `
+		# on window close: call custom exit
+		wm protocol .w WM_DELETE_WINDOW {
 			onexit
 		}
 		"
 fi
 
 handle_window_commands() {
-	[ -v TITLE ] && wish_exec "wm title . $(tcl_str "${TITLE}")"
+	[ -v TITLE ] && wish_exec "wm title .w $(tcl_str "${TITLE}")"
   if ([ -n "$WIDTH" ] && [ -n "$HEIGHT" ]); then
     if ([ -n "$X" ] && [ -n "$Y" ]); then
-      wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")"
+      wish_exec "wm geometry .w $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")"
     else
-      wish_exec "wm geometry . $(tcl_str "${WIDTH}x${HEIGHT}")"
+      wish_exec "wm geometry .w $(tcl_str "${WIDTH}x${HEIGHT}")"
     fi
   fi
-	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes . -topmost $(tcl_str "$ALWAYS_ON_TOP")"
-	[ -n "$MAXIMIZE" ] && wish_exec "wm attributes . -fullscreen $MAXIMIZE"
-	[ -n "$ALPHA" ] && wish_exec "wm attributes . -alpha $(tcl_str "$ALPHA")"
-	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto . imgobjicon"
-	[ -n "$RESIZABLE" ] && wish_exec "wm resizable . $RESIZABLE $RESIZABLE"
+	[ -n "$ALWAYS_ON_TOP" ] && wish_exec "wm attributes .w -topmost $(tcl_str "$ALWAYS_ON_TOP")"
+	[ -n "$MAXIMIZE" ] && wish_exec "wm attributes .w -fullscreen $MAXIMIZE"
+	[ -n "$ALPHA" ] && wish_exec "wm attributes .w -alpha $(tcl_str "$ALPHA")"
+	[ -n "$ICON" ] && wish_exec "image create photo imgobjicon -file $(tcl_str "${ICON}")" && wish_exec "wm iconphoto .w imgobjicon"
+	[ -n "$RESIZABLE" ] && wish_exec "wm resizable .w $RESIZABLE $RESIZABLE"
 	[ -n "$THEME" ] && wish_exec "ttk::style theme use $(tcl_str "$THEME")"
-	[ -n "$ICONIFY" ] && wish_exec "wm iconify ."
-	[ -n "$HIDE" ] && wish_exec "wm withdraw ."
-	[ -n "$SHOW" ] && wish_exec "wm deiconify ."
+	[ -n "$ICONIFY" ] && wish_exec "wm iconify .w"
+	[ -n "$HIDE" ] && wish_exec "wm withdraw .w"
+	[ -n "$SHOW" ] && wish_exec "wm deiconify .w"
 	[ -n "$CLOSE" ] && wish_exec "onexit"
 	if [ -n "$HOTKEY" ]; then
 		[ ! -v COMMAND ] && echo "hotkey command also needs the --command option." && die 23
-		wish_exec "bind . <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
+		wish_exec "bind .w <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
 		write_command_file "$HOTKEY" "$COMMAND"
 	fi
 	if [ -n "$ON_CLOSE" ]; then
@@ -377,7 +388,7 @@ handle_window_commands() {
 }
 # custom user tk commands to be executed directly
 handle_tk_commands() {
-	[ -n "$VAR_NAME" ] && var=".$VAR_NAME" || var=
+	[ -n "$VAR_NAME" ] && var=".w.$VAR_NAME" || var=
 	wish_exec "$(tcl_esc "$var") ${TKCOMMAND}"
 }
 
@@ -387,8 +398,8 @@ analyse_varname() {
 	# always get type of given variable:
 	wish_exec "
 		set windowclass \"\"
-		if {[winfo exists $(tcl_esc .$VAR_NAME)]} {
-			set windowclass [winfo class $(tcl_esc .$VAR_NAME)]
+		if {[winfo exists $(tcl_esc .w.$VAR_NAME)]} {
+			set windowclass [winfo class $(tcl_esc .w.$VAR_NAME)]
 		}"
 	resp="$(wish_get "exec echo \$windowclass")"
 	if [ -n "$resp" ] ; then
@@ -410,29 +421,29 @@ handle_element_commands() {
 	case "$TYPE" in
 		tbutton|button|ttk::button|submit)
 			# set up element
-			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .$VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
+			[ $IS_NEW = 1 ] && wish_exec "ttk::button $(tcl_esc .w.$VAR_NAME) -command \"onaction $(tcl_esc .w.$VAR_NAME)\""
 			# parse non-place options
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
 			# create command script if command is set
-			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "tk::text $(tcl_esc .$VAR_NAME)" # -yscrollcommand \"$(tcl_esc .$VAR_NAME)_scroll set\"
-				# wish_exec "ttk::scrollbar $(tcl_esc .$VAR_NAME)_scroll -command \"$(tcl_esc .$VAR_NAME) yview\"" # not compatible with basic pack commands below.
+				wish_exec "tk::text $(tcl_esc .w.$VAR_NAME)" # -yscrollcommand \"$(tcl_esc .w.$VAR_NAME)_scroll set\"
+				# wish_exec "ttk::scrollbar $(tcl_esc .w.$VAR_NAME)_scroll -command \"$(tcl_esc .w.$VAR_NAME) yview\"" # not compatible with basic pack commands below.
 			fi
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
-			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $(tcl_esc .$VAR_NAME) \"<Return>\" { break }"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) delete 1.0 end" && wish_exec "$(tcl_esc .w.$VAR_NAME) insert 1.0 $(tcl_str "$CONTENT")"
+			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $(tcl_esc .w.$VAR_NAME) \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .$VAR_NAME)"
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -v IMAGE ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
+			[ $IS_NEW = 1 ] && wish_exec "ttk::label $(tcl_esc .w.$VAR_NAME)"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v IMAGE ] && wish_exec "image create photo imgobj$(tcl_esc $VAR_NAME) -file $(tcl_str "${IMAGE}")" && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -image imgobj$(tcl_esc $VAR_NAME)"
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .$VAR_NAME)\""
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $(tcl_esc .w.$VAR_NAME) -variable $(tcl_esc $VAR_NAME) -command \"onaction $(tcl_esc .w.$VAR_NAME)\""
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
@@ -441,7 +452,7 @@ handle_element_commands() {
 				### determine value: (#radiogroupmembers)+1
 				wish_exec "
 					set matched_children \"\"
-					foreach {child} [winfo children .] {
+					foreach {child} [winfo children .w.] {
 						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_esc "$GROUP") } {
 							append matched_children \"\n\${child}\"
 						}
@@ -450,19 +461,19 @@ handle_element_commands() {
 				#zero-indexed:
 				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
-				wish_exec "ttk::radiobutton $(tcl_esc .$VAR_NAME) -variable $(tcl_esc "${GROUP}") -command \"onaction $(tcl_esc .$VAR_NAME)\" -value ${radionumber}"
+				wish_exec "ttk::radiobutton $(tcl_esc .w.$VAR_NAME) -variable $(tcl_esc "${GROUP}") -command \"onaction $(tcl_esc .w.$VAR_NAME)\" -value ${radionumber}"
 			 fi
-			[ -v CONTENT ] && wish_exec "$(tcl_esc .$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
-			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v CONTENT ] && wish_exec "$(tcl_esc .w.$VAR_NAME) configure -text $(tcl_str "${CONTENT}")"
+			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			if [ "$SELECTED" == 1 ]; then
-				local radionumber="$(wish_get "$(tcl_esc .$VAR_NAME) cget -value")"
+				local radionumber="$(wish_get "$(tcl_esc .w.$VAR_NAME) cget -value")"
 				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
 			fi
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "ttk::combobox $(tcl_esc .$VAR_NAME) -state readonly"
-				wish_exec "bind $(tcl_esc .$VAR_NAME) <<ComboboxSelected>> \"onaction $(tcl_esc .$VAR_NAME)\""
+				wish_exec "ttk::combobox $(tcl_esc .w.$VAR_NAME) -state readonly"
+				wish_exec "bind $(tcl_esc .w.$VAR_NAME) <<ComboboxSelected>> \"onaction $(tcl_esc .w.$VAR_NAME)\""
 			fi
 			if [ -n "$CONTENT" ]; then
 				IFS='|' && arr=($CONTENT) && unset IFS
@@ -474,10 +485,10 @@ handle_element_commands() {
 					[ -z "$val" ] && selected_index=$((i-1)) || # empty val = two pipes in a row = use prev value as selected one.
 						values="${values} $(tcl_str "$val")"
 				done
-				wish_exec "$(tcl_esc .$VAR_NAME) configure -values [list $values]"
-				wish_exec "$(tcl_esc .$VAR_NAME) current $selected_index"
+				wish_exec "$(tcl_esc .w.$VAR_NAME) configure -values [list $values]"
+				wish_exec "$(tcl_esc .w.$VAR_NAME) current $selected_index"
 			fi
-			[ -v COMMAND ] && write_command_file ".$VAR_NAME" "$COMMAND"
+			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
 		*)
 			echo "element >$TYPE< not supported." ; die 5
@@ -486,18 +497,18 @@ handle_element_commands() {
 	# disabled option
 	if [ -n "$DISABLED" ]; then
 		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
-		wish_exec "$(tcl_esc .$VAR_NAME) configure -state ${DISABLED}"
+		wish_exec "$(tcl_esc .w.$VAR_NAME) configure -state ${DISABLED}"
 	fi
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
-		wish_exec "place $(tcl_esc .$VAR_NAME) ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
+		wish_exec "place $(tcl_esc .w.$VAR_NAME) ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
 	return 0
 }
 
 handle_get_commands() {
 	case "$TYPE" in
 		text)
-			echo "$(wish_get "$(tcl_esc .$VAR_NAME) get 1.0 end")"
+			echo "$(wish_get "$(tcl_esc .w.$VAR_NAME) get 1.0 end")"
 			;;
 		tcheckbutton)
 			wish_exec "
@@ -508,7 +519,7 @@ handle_get_commands() {
 			echo "$(wish_get "exec echo \$check_value")"
 			;;
 		tradiobutton)
-			local radio_var="$(wish_get "$(tcl_esc .$VAR_NAME) cget -variable")"
+			local radio_var="$(wish_get "$(tcl_esc .w.$VAR_NAME) cget -variable")"
 			wish_exec "
 				set radio_value \"\"
 				if {[info exists $(tcl_esc "$radio_var")]} {
@@ -517,7 +528,7 @@ handle_get_commands() {
 			echo "$(wish_get "exec echo \$radio_value")"
 			;;
 		tcombobox)
-			echo "$(wish_get "$(tcl_esc .$VAR_NAME) get")"
+			echo "$(wish_get "$(tcl_esc .w.$VAR_NAME) get")"
 			;;
 		*)
 			echo "get-method for this element not supported :(" && exit 12

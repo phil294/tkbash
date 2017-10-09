@@ -45,7 +45,7 @@ USAGE:
 	tkbash <gui_id> window [-options...]
 		Set window properties.
 	tkbash <gui_id> [<variable>] --tkcommand <command>
-		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -background green'" or "tkbash mygui --tkcommand 'wm maxsize . 200 200'".
+		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -background green'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'".
 
 
 		gui_id
@@ -89,7 +89,7 @@ Set options for the entire interface / window as described above. You can set wi
 	--hotkey, --bind, --shortcut
 		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'"
 	--onclose
-		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'"
+		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished.
 	--exist
 		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 
@@ -108,21 +108,21 @@ ELEMENTS
 			-t, --text, --content <text>
 				Set the contents of the text field.
 			--ignore-return, --ignore-newline, --entry, --one-row
-				The user cannot type newlines.
+				The user cannot type newlines. If combined with an appropriate height, this could also be used as a form input.
 		Get:
 			Prints the contents of the text field.
-	label
+	label / p
 		A label element displays plain text somewhere on the gui.
 		Options:
 			-t, --text, --content <text>
 				Set the contents of the label.
 		Get:
 			You cannot retrieve any value from a label.
-	image / picture / img / bmp / bitmap / p
+	image / picture / img / bmp / bitmap
 		Display an image.
 		Options:
 			--image <path>
-				Path of the image to be shown.
+				Path of the image to be shown. Note: currently seems to only support png. This needs to be fixed somehow.
 		Get:
 			You cannot retrieve any value from an image.
 		Note: Internally, this does the same like 'label', meaning these two element names are interchangeable.
@@ -178,8 +178,8 @@ Here is a minimal example of how drag'n'drop might be implemented for the image 
 ```
 # full tkdnd reference: http://wiki.tcl.tk/36708
 tkbash 1 --tk 'package require tkdnd
-    tkdnd::drop_target register .image1 *
-    bind .image1 <<Drop>> {
+    tkdnd::drop_target register .w.image1 *
+    bind .w.image1 <<Drop>> {
         exec notify-send "You dropped %D"
     }'
 ```
