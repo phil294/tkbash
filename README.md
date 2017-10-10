@@ -171,6 +171,8 @@ ELEMENTS
 Note on the -c, --command option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed.
 ```
 
+## Bonus stuff
+
 ### Coloring elements
 This feature (like much much more) is not supported by tkbash itself (yet), use `--tkcommand`:
 ```
@@ -186,4 +188,21 @@ tkbash 1 --tk 'package require tkdnd
     bind .w.image1 <<Drop>> {
         exec notify-send "You dropped %D"
     }'
+```
+
+### Popup
+Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
+
+![tkbash-popup](https://i.imgur.com/OqseZ06.png)
+```
+popup_text="Click me!
+	Lorem ipsum dolor sit amet.
+	nibh etiam sed in, 
+	facilis fuisset molestie pri eu. 
+	Ut porro eripuit evertitur pro, nostro minimum vix et." 
+tkbash popup window --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
+tkbash popup p p -x 10 -y 10 -w 330 -h 80 -t "$popup_text"
+
+tkbash popup --tk ".w configure -background black"
+tkbash popup p --tk "configure -background black -foreground white"
 ```
