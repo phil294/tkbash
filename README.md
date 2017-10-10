@@ -45,7 +45,7 @@ USAGE:
 	tkbash <gui_id> window [-options...]
 		Set window properties.
 	tkbash <gui_id> [<variable>] --tkcommand <command>
-		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -background green'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'".
+		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -background green'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'". Note: toplevel root window in tkbash is ".w".
 
 
 		gui_id
@@ -94,6 +94,8 @@ Set options for the entire interface / window as described above. You can set wi
 		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 	--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect
 		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close).
+	--onclick
+		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclick --command 'echo You clicked the window.'"
 
 ELEMENTS
 	button / submit

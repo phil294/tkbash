@@ -35,7 +35,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> window [-options...]${COLOR_RESET}"
 	echo -e "\t\tSet window properties."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
-	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\"."
+	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\". Note: toplevel root window in tkbash is \".w\"."
 	echo
 	echo
 	echo -e "\t\t${COLOR_BOLD}gui_id${COLOR_RESET}"
@@ -84,6 +84,8 @@ show_help() {
 	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
 	echo -e "\t${COLOR_BOLD}--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect${COLOR_RESET}"
 	echo -e "\t\tImportant: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close)."
+	echo -e "\t${COLOR_BOLD}--onclick${COLOR_RESET}"
+	echo -e "\t\tAdd an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclick --command 'echo You clicked the window.'\""
 	echo
 	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit"
@@ -162,7 +164,7 @@ show_help() {
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -204,6 +206,7 @@ while true; do
 		--onclose|--onclosed) ON_CLOSE=1 && shift ;;
 		--exist|--exists) EXIST=1 && shift ;;
 		--notitlebar|--nobar|--nocaption|--nodecorations|--nodecoration|--overrideredirect|--tooltip|--popup) NOTITLEBAR=1 && shift ;;
+		--onclick) ON_CLICK=1 && shift;;
 		--)
 			shift
 			break ;;
@@ -328,7 +331,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	set +m
 	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
-	if [ "$NOTITLEBAR" = 1 ]; then
+	if [ "$NOTITLEBAR" = 1 ]; then # thanks to Donal Fellows! https://stackoverflow.com/a/30885979/3779853
 		additional_content_notitlebar="wm overrideredirect .w 1
 			wm attribute .w -type toolltip"
 	fi
@@ -338,7 +341,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		# custom toplevel: .w
 		toplevel .w
 		$additional_content_notitlebar
-		# create listenerhandler: execute respective script on command / bind etc. used by -command options below.
+		# create listenerhandler: execute respective script on command / bind etc. used by -command options below. can be nothing.
 		proc onaction {trigger} {
 			if { [file exists ${commandfile_tcl}] == 1} {
 				return [ exec ${commandfile_tcl} >@ stdout 2>@ stderr & ]
@@ -360,6 +363,8 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		wm protocol .w WM_DELETE_WINDOW {
 			onexit
 		}
+		# on user click: custom handler
+		bind .w <1> \"onaction onclick\"
 		"
 fi
 
@@ -390,6 +395,10 @@ handle_window_commands() {
 	if [ -n "$ON_CLOSE" ]; then
 		[ ! -v COMMAND ] && echo "on-close command also needs the --command option." && die 23
 		write_command_file "onclose" "$COMMAND"
+	fi
+	if [ -n "$ON_CLICK" ]; then
+		[ ! -v COMMAND ] && echo "on-click command also needs the --command option." && die 26
+		write_command_file "onclick" "$COMMAND"
 	fi
 	return 0
 }
