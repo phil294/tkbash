@@ -193,13 +193,12 @@ tkbash 1 --tk 'package require tkdnd
 ### Popup
 Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
 
-![tkbash-popup](https://i.imgur.com/OqseZ06.png)
+![tkbash-popup](https://i.imgur.com/M9S6yra.png)
 ```
-popup_text="Click me!
-	Lorem ipsum dolor sit amet.
-	nibh etiam sed in, 
-	facilis fuisset molestie pri eu. 
-	Ut porro eripuit evertitur pro, nostro minimum vix et." 
+popup_text="Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu. 
+	Ut porro eripuit evertitur pro,
+	nostro minimum vix et.
+	Amen."
 tkbash popup window --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
 tkbash popup p p -x 10 -y 10 -w 330 -h 80 -t "$popup_text"
 

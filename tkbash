@@ -452,9 +452,10 @@ handle_element_commands() {
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $WVAR_ESC \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::label $WVAR_ESC"
+			[ $IS_NEW = 1 ] && wish_exec "ttk::label $WVAR_ESC -justify left -anchor nw"
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v IMAGE ] && wish_exec "image create photo imgobj$WVAR_ESC -file $(tcl_str "${IMAGE}")" && wish_exec "$WVAR_ESC configure -image imgobj$WVAR_ESC"
+			[ -n "$WIDTH" ] && wish_exec "$WVAR_ESC configure -wraplength $(tcl_str "$WIDTH")" # change width / add element: enable word wrap
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
