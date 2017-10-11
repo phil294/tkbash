@@ -3,7 +3,7 @@ Build fancy graphical user interfaces with simple bash commands! Inspired by [Au
 ## Bash wrapper for Tcl/Tk gui
 
 ![tkbash-gui](https://i.imgur.com/J8XUtSB.png)
-```
+```bash
 tkbash 1 label label1 --relx 0.4 -y 10 -w 130 -h 20 -t "I like bananas."
 tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green|Blue"
 tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
@@ -15,7 +15,7 @@ tkbash 1 window --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 
 tkbash 1 window --hotkey Escape --command "echo You pressed Escape."
 ```
 later on:
-```
+```bash
 tkbash 1 button1 -t "new button text"
 ```
 
@@ -177,13 +177,13 @@ Note on the -c, --command option: The command passed will be executed asynchrono
 
 ### Coloring elements
 This feature (like much much more) is not supported by tkbash itself (yet), use `--tkcommand`:
-```
+```bash
 tkbash 1 label1 --tkcommand 'configure -background yellow'
 ```
 
 ### Drag+drop
 Here is a minimal example of how drag'n'drop might be implemented for the image element from the above sample window. This supports files, text etc. This functionality is not supported natively because it needs an external library. Download here: http://wiki.tcl.tk/2768 & copy for example to /usr/share/tcltk/tclx.y/. The below code makes use of the `--tkcommand` option. So, everything starting from `package` on is tcl code.
-```
+```bash
 # full tkdnd reference: http://wiki.tcl.tk/36708
 tkbash 1 --tk 'package require tkdnd
     tkdnd::drop_target register .w.image1 *
@@ -196,7 +196,7 @@ tkbash 1 --tk 'package require tkdnd
 Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
 
 ![tkbash-popup](https://i.imgur.com/M9S6yra.png)
-```
+```bash
 popup_text="Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu. 
 	Ut porro eripuit evertitur pro,
 	nostro minimum vix et.
