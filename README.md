@@ -109,6 +109,8 @@ ELEMENTS
 	text / input / edit / textfield / textarea
 		A text element is a multiline input area for text.
 		Options:
+			--scrollbar <switch>
+				Show or hide the vertical scrollbar next to the textfield. <switch> is 0 or 1.
 			-t, --text, --content <text>
 				Set the contents of the text field.
 			--ignore-return, --ignore-newline, --entry, --one-row

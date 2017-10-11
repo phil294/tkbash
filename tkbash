@@ -99,6 +99,8 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea"
 	echo -e "\t\tA text element is a multiline input area for text."
 	echo -e "\t\tOptions:"
+	echo -e "\t\t\t${COLOR_BOLD}--scrollbar${COLOR_RESET} <switch>"
+	echo -e "\t\t\t\tShow or hide the vertical scrollbar next to the textfield. <switch> is 0 or 1."
 	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
 	echo -e "\t\t\t\tSet the contents of the text field."
 	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
@@ -164,7 +166,7 @@ show_help() {
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -207,6 +209,7 @@ while true; do
 		--exist|--exists) EXIST=1 && shift ;;
 		--notitlebar|--nobar|--nocaption|--nodecorations|--nodecoration|--overrideredirect|--tooltip|--popup) NOTITLEBAR=1 && shift ;;
 		--onclick) ON_CLICK=1 && shift;;
+		--scrollbar) SCROLLBAR="$2" && shift 2 ;;
 		--)
 			shift
 			break ;;
@@ -440,13 +443,20 @@ handle_element_commands() {
 			[ $IS_NEW = 1 ] && wish_exec "ttk::button $WVAR_ESC -command \"onaction $WVAR_ESC\""
 			# parse non-place options
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
-			# create command script if command is set
-			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
 		text|tk::text|input|edit|textfield|textarea)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "tk::text $WVAR_ESC" # -yscrollcommand \"$WVAR_ESC_scroll set\"
-				# wish_exec "ttk::scrollbar $WVAR_ESC_scroll -command \"$WVAR_ESC yview\"" # not compatible with basic pack commands below.
+				wish_exec "tk::text $WVAR_ESC -yscrollcommand \"${WVAR_ESC}_scroll set\""
+				wish_exec "ttk::scrollbar ${WVAR_ESC}_scroll -command \"$WVAR_ESC yview\"" # placed seperately and dynamically below if desired by scrollbar option
+			fi
+			if [ "$SCROLLBAR" == 0 ]; then
+				wish_exec "place forget ${WVAR_ESC}_scroll"
+			elif [ "$SCROLLBAR" == 1 ] ||
+				([ -z "$SCROLLBAR" ] && [[ "$(wish_get "winfo ismapped ${WVAR_ESC}_scroll")" == 1 ]]) # no scrollbar option, but scrollbar exists: this is a follow-up command for this text-element. in case it contains positional params, update scrollbar:  // todo check -n X || -n Y etc. ?
+			then
+			 	text_dimensions=($(wish_get "exec echo \"[winfo x $WVAR_ESC] [winfo y $WVAR_ESC] [winfo width $WVAR_ESC] [winfo height $WVAR_ESC]\""))
+				[ -z "$X" ] && X=${text_dimensions[0]}; [ -z "$Y" ] && Y=${text_dimensions[1]}; [ -z "$WIDTH" ] && WIDTH=${text_dimensions[2]}; [ -z "$HEIGHT" ] && HEIGHT=${text_dimensions[3]}
+				wish_exec "place ${WVAR_ESC}_scroll -x $((X+WIDTH)) -y $((Y)) -width 16 -height $((HEIGHT))"
 			fi
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC delete 1.0 end" && wish_exec "$WVAR_ESC insert 1.0 $(tcl_str "$CONTENT")"
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $WVAR_ESC \"<Return>\" { break }"
@@ -460,7 +470,6 @@ handle_element_commands() {
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
 			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
-			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
 		tradiobutton|radiobutton|ttk::radiobutton|radio)
@@ -481,7 +490,6 @@ handle_element_commands() {
 				wish_exec "ttk::radiobutton $WVAR_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction $WVAR_ESC\" -value ${radionumber}"
 			 fi
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
-			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			if [ "$SELECTED" == 1 ]; then
 				local radionumber="$(wish_get "$WVAR_ESC cget -value")"
 				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
@@ -505,7 +513,6 @@ handle_element_commands() {
 				wish_exec "$WVAR_ESC configure -values [list $values]"
 				wish_exec "$WVAR_ESC current $selected_index"
 			fi
-			[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 			;;
 		*)
 			echo "element >$TYPE< not supported." ; die 5
@@ -516,9 +523,11 @@ handle_element_commands() {
 		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
 		wish_exec "$WVAR_ESC configure -state ${DISABLED}"
 	fi
+	# create command file (label -c "..." would be possible, creates file but no action)
+	[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
-		wish_exec "place $WVAR_ESC ${X:+-x $(tcl_str "$X")} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $(tcl_str "$Y")} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $(tcl_str "$WIDTH")} ${HEIGHT:+-height $(tcl_str "$HEIGHT")}"
+		wish_exec "place $WVAR_ESC ${X:+-x $((X))} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $((Y))} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $((WIDTH))} ${HEIGHT:+-height $((HEIGHT))}" # todo X as x ?
 	return 0
 }
 
