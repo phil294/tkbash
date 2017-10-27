@@ -47,9 +47,9 @@ show_help() {
 	echo
 	echo -e "\t\tWhen adding an element for the first time, positional options are required:"
 	echo -e "\t\t${COLOR_BOLD}-x <x-position>${COLOR_RESET}"
-	echo -e "\t\t${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
+	echo -e "\t\t(optional) ${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
 	echo -e "\t\t${COLOR_BOLD}-y <y-position>${COLOR_RESET}"
-	echo -e "\t\t${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
+	echo -e "\t\t(optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
 	echo -e "\t\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
 	echo -e "\t\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
 	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
@@ -167,7 +167,7 @@ show_help() {
 
 OPTIONS=w:h:x:X:y:Y:c:t:
 LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:
-PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@")
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@") || die 27
 if [[ $? -ne 0 ]]; then
 	die 2
 fi
@@ -336,7 +336,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
 	if [ "$NOTITLEBAR" = 1 ]; then # thanks to Donal Fellows! https://stackoverflow.com/a/30885979/3779853
 		additional_content_notitlebar="wm overrideredirect .w 1
-			wm attribute .w -type toolltip"
+			wm attribute .w -type toolltip" # it is up to the window manager how to interpret the window type
 	fi
 	wish_exec "
 		# hide default window
@@ -430,7 +430,7 @@ analyse_varname() {
 			echo "New element detected. x (-x or --relx) , y (-y or --rely), width (-w) and height (-h) options required."
 			die 6
 		fi
-		[ -z "$ACTION" ] && echo "element '$VAR_NAME' unknown. please specify element type." && die 15
+		[ -z "$ACTION" ] && echo "element '$VAR_NAME' unknown. If you wanted to add a new element, the syntax is 'tkbash <gui-id> <element> <variable> --options...'. For editing already existing elements, <element> can be omitted. <variable> can never be omitted." && die 15
 		TYPE="${ACTION,,}"
 	fi
 	return 0
