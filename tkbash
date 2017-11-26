@@ -252,11 +252,14 @@ else
 	echo "Too many arguments!" && die 22
 fi
 [[ "$HOTKEY" == *" "* ]] && echo "hotkey name cannot contain spaces!" && die 21
+[[ "$GUI_ID" == *" "* ]] && echo "gui name cannot contain spaces!" && die 21
 [[ "$GROUP" == *" "* ]] && echo "group name cannot contain spaces!" && die 21
 
 ################################# helper functions
 
 tcl_esc() {
+	#fixme wtf
+	# http://tcl.tk/man/tcl8.5/TclCmd/Tcl.htm
 	echo "$1" |sed 's/\\/\\\\/g' |sed 's/"/\\"/g' |sed 's/\$/\\\$/g' |sed 's/\[/\\\[/g' |sed 's/\]/\\\]/g' |sed 's/{/\\{/g' |sed 's/}/\\}/g'
 }
 tcl_str() {
@@ -326,13 +329,23 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 	# gui does not exist yet. initialize stuff
 	# set up new pipe
 	mkfifo "$WISH_PIPE"
+	WISH_PIPE_HELPER=${WISH_PIPE}_
+	mkfifo "$WISH_PIPE_HELPER"
 	set -m # enable job control (so wishpipe job has its own group)
 	(
-		trap "rm \"${TMP}/${GUI_ID}\"*; exit 0" TERM INT # clean up
-		cat 0<> "$WISH_PIPE" |wish # s. https://unix.stackexchange.com/a/392754/103120
+		# read from wishpipe contineously and pipe to wish.
+		# cannot use '|wish' because wish needs to exit by itself (see below) and this job should end afterwards too. --> use wish<pipe syntax
+		# cat instead of tail because busybox: https://unix.stackexchange.com/a/392754/103120
+		# i have no idea why the very next line is needed but it is. pipe / pipe_helper can also be exchanged in any funny way. could not get it to run without the helper pipe.
+		cat 0<> "$WISH_PIPE_HELPER" > "$WISH_PIPE" &
+		tail_pid=$!
+		wish < "$WISH_PIPE"
+		# wish exited. clean up: remove command files, wishpipe etc.
+		kill -INT $tail_pid
+		rm "${TMP}/${GUI_ID}"*
+		exit 0
 	) &
 	set +m
-	wish_group_id="$(ps -o pgid= $! | grep -o '[0-9]*')"
 	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")_\${trigger}_command\""
 	if [ "$NOTITLEBAR" = 1 ]; then # thanks to Donal Fellows! https://stackoverflow.com/a/30885979/3779853
 		additional_content_notitlebar="wm overrideredirect .w 1
@@ -347,7 +360,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		# create listenerhandler: execute respective script on command / bind etc. used by -command options below. can be nothing.
 		proc onaction {trigger} {
 			if { [file exists ${commandfile_tcl}] == 1} {
-				return [ exec ${commandfile_tcl} >@ stdout 2>@ stderr & ]
+				return [ exec ${commandfile_tcl} >@stdout 2>@stderr & ]
 			}
 			return -1
 		}
@@ -358,9 +371,10 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 			set pid [ onaction onclose ]
 			while {[file exists /proc/\$pid]} {
 				# onclose action needs to terminate before remaining scripts and pipe can be deleted
-				exec /bin/sleep 0.1
+				exec /bin/sleep 0.02
 			}
-			exec kill -INT -$wish_group_id
+			# exec kill -INT -$wish_group_id # need to send 'exit' to tcl instead because tcl canNOT handle signals natively. needed sometimes (to have xclip changes to clipboard be persistent, for example). alternative would be Tcl_finalize from <tcl.h> via custom extension, but tkbash requires no external lib
+			exit
 		}
 		# on window close: call custom exit
 		wm protocol .w WM_DELETE_WINDOW {

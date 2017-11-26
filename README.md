@@ -207,7 +207,3 @@ tkbash popup p p -x 10 -y 10 -w 330 -h 80 -t "$popup_text"
 tkbash popup --tk ".w configure -background black"
 tkbash popup p --tk "configure -background black -foreground white"
 ```
-
-### Clipboard interaction
-
-When storing a new string into clipboard, piping to `xclip -selection c` does *not* seem to work. This seems to be a bug with xclip (see [here](https://stackoverflow.com/questions/46009076) or [here](https://unix.stackexchange.com/questions/316715)). Use `xsel -ib` instead. For retrieving clipboards, xclip does fine.
