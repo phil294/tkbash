@@ -118,7 +118,7 @@ show_help() {
 	echo -e "\t\tDisplay an image."
 	echo -e "\t\tOptions:"
 	echo -e "\t\t\t${COLOR_BOLD}--image${COLOR_RESET} <path>"
-	echo -e "\t\t\t\tPath of the image to be shown. Note: currently seems to only support png. This needs to be fixed somehow."
+	echo -e "\t\t\t\tPath of the image to be shown. Not all formats are supported. (yes: png, no: jpg)"
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tYou cannot retrieve any value from an image."
 	echo -e "\t\tNote: Internally, this does the same like 'label', meaning these two element names are interchangeable."
