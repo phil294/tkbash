@@ -15,9 +15,9 @@ die() {
 }
 
 BASH_MINIMUM_VERSION="4.2"
-[[ $(sort -V <<< $BASH_VERSION$'\n'$BASH_MINIMUM_VERSION |head -1) != $BASH_MINIMUM_VERSION ]] && echo "Minimum bash version required: $BASH_MINIMUM_VERSION" && die 24
-command -v wish >/dev/null || (echo "You need to have wish (tcl/tk) installed." && die 25)
-
+# todo does not support busybox
+#[[ $(sort -V <<< $BASH_VERSION$'\n'$BASH_MINIMUM_VERSION |head -1) != $BASH_MINIMUM_VERSION ]] && echo "Minimum bash version required: $BASH_MINIMUM_VERSION" && die 24
+#command -v wish >/dev/null || (echo "You need to have wish (tcl/tk) installed." && die 25)
 
 TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
