@@ -11,8 +11,8 @@ tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
     notify-send \"You selected color \$(tkbash 1 get select1)! \""
 tkbash 1 text text1 -x 165 -y 105 -w 120 -h 120 -t "Yorem Lipsum"
 tkbash 1 image image1 -x 10 -y 60 -w 125 -h 120 --image "kitten.png"
-tkbash 1 window --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 1 --icon "kitten.png"
-tkbash 1 window --hotkey Escape --command "echo You pressed Escape."
+tkbash 1 --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 1 --icon "kitten.png"
+tkbash 1 --hotkey Escape --command "echo You pressed Escape."
 ```
 later on:
 ```bash
@@ -42,8 +42,8 @@ USAGE:
 		Add / edit element.
 	tkbash <gui_id> get <variable>
 		Print the value of the associated element.
-	tkbash <gui_id> window [-options...]
-		Set window properties.
+	tkbash <gui_id> [-options...]
+		Set global window properties.
 
 	tkbash <gui_id> [<variable>] --tkcommand <command>
 		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -font verdana'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'". Note: toplevel root window in tkbash is ".w".
@@ -59,7 +59,7 @@ USAGE:
 			Variable to hold the value associated with the element.
 
 		When adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options.
-Window
+Window properties
 Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position).
 	--theme <themename>
 		Set the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic.
@@ -212,6 +212,6 @@ Example of a basic popup (similar to notify-send) that closes itself and opens u
 ![tkbash-popup](https://i.imgur.com/M9S6yra.png)
 ```bash
 popup_text=$'Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu.\nUt porro eripuit evertitur pro,\nnostro minimum vix et.\nAmen.'
-tkbash popup window --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
+tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
 tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "$popup_text"
 ```

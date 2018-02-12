@@ -32,8 +32,8 @@ show_help() {
 	echo -e "\t\tAdd / edit element."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> get <variable>${COLOR_RESET}"
 	echo -e "\t\tPrint the value of the associated element."
-	echo -e "\t${COLOR_BOLD}tkbash <gui_id> window [-options...]${COLOR_RESET}"
-	echo -e "\t\tSet window properties."
+	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [-options...]${COLOR_RESET}"
+	echo -e "\t\tSet global window properties."
 	echo
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
 	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -font verdana'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\". Note: toplevel root window in tkbash is \".w\"."
@@ -49,7 +49,7 @@ show_help() {
 	echo -e "\t\t\tVariable to hold the value associated with the element."
 	echo
 	echo -e "\t\tWhen adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options."
-	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
+	echo -e "${COLOR_BOLD}Window properties${COLOR_RESET}"
 	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position)."
 	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
 	echo -e "\t\tSet the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic."
@@ -65,7 +65,6 @@ show_help() {
 	echo -e "\t\tSet the window icon."
 	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
 	echo -e "\t\tSet the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234."
-	
 	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
 	echo -e "\t${COLOR_BOLD}--iconify${COLOR_RESET}"
@@ -254,9 +253,6 @@ if [ "$2" = "get" ] && [ $# = 3 ]; then
 	VAR_NAME="$3"
 	GET_REQUEST=1
 	require_variable
-elif [ "$2" = "window" ] && [ $# = 2 ]; then
-	ACTION="window"
-	VAR_NAME=
 elif [ $# = 2 ]; then
 	VAR_NAME="$2"
 	require_variable
@@ -265,8 +261,8 @@ elif [ $# = 3 ]; then
 	VAR_NAME="$3"
 	require_variable
 elif [ $# = 1 ]; then
-	[ ! -v TKCOMMAND ] && require_variable # = exit
-	# else: tkcommand.
+	ACTION="window"
+	VAR_NAME=
 else
 	echo "Too many arguments!" && die 22
 fi
@@ -440,12 +436,10 @@ handle_window_commands() {
 		write_command_file "onclick" "$COMMAND"
 	fi
 	[ -v BACKGROUND ] && wish_exec ".w configure -background $(tcl_str "$BACKGROUND")" # todo -v? -n? inconsistent usage
+
+	# custom user tk commands to be executed directly
+	[ -v TKCOMMAND ] && wish_exec "${TKCOMMAND}"
 	return 0
-}
-# custom user tk commands to be executed directly
-handle_tk_commands() {
-	[ -n "$VAR_NAME" ] && var=".w.$VAR_NAME" || var=
-	wish_exec "$(tcl_esc "$var") ${TKCOMMAND}"
 }
 
 analyse_varname() {
@@ -570,6 +564,10 @@ handle_element_commands() {
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
 		wish_exec "place $WVAR_ESC ${X:+-x $((X))} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $((Y))} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $((WIDTH))} ${HEIGHT:+-height $((HEIGHT))}" # todo X as x ?
+
+	# custom user tk commands to be executed directly
+	[ -v TKCOMMAND ] && wish_exec "${WVAR_ESC} ${TKCOMMAND}"
+
 	return 0
 }
 
@@ -605,9 +603,7 @@ handle_get_commands() {
 	return 0
 }
 
-if [ -v TKCOMMAND ]; then
-	handle_tk_commands
-elif [ "$ACTION" = "window" ]; then
+if [ "$ACTION" = "window" ]; then
 	handle_window_commands
 else
 	analyse_varname
