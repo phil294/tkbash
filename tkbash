@@ -513,8 +513,8 @@ handle_element_commands() {
 				### determine value: (#radiogroupmembers)+1
 				wish_exec "
 					set matched_children \"\"
-					foreach {child} [winfo children .w.] {
-						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_esc "$GROUP") } {
+					foreach {child} [winfo children .w] {
+						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_str "$GROUP") } {
 							append matched_children \"\n\${child}\"
 						}
 					}"
