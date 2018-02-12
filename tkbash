@@ -34,8 +34,11 @@ show_help() {
 	echo -e "\t\tPrint the value of the associated element."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> window [-options...]${COLOR_RESET}"
 	echo -e "\t\tSet window properties."
+	echo
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
-	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -background green'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\". Note: toplevel root window in tkbash is \".w\"."
+	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -font verdana'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\". Note: toplevel root window in tkbash is \".w\"."
+	echo -e "\t${COLOR_BOLD}[any command...] --debug, --print, --log${COLOR_RESET}"
+	echo -e "\t\tPrint all commands sent to the wish background process (Tcl/Tk code) to stderr. For debugging."
 	echo
 	echo
 	echo -e "\t\t${COLOR_BOLD}gui_id${COLOR_RESET}"
@@ -45,13 +48,7 @@ show_help() {
 	echo -e "\t\t${COLOR_BOLD}variable${COLOR_RESET}"
 	echo -e "\t\t\tVariable to hold the value associated with the element."
 	echo
-	echo -e "\t\tWhen adding an element for the first time, positional options are required:"
-	echo -e "\t\t${COLOR_BOLD}-x <x-position>${COLOR_RESET}"
-	echo -e "\t\t(optional) ${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
-	echo -e "\t\t${COLOR_BOLD}-y <y-position>${COLOR_RESET}"
-	echo -e "\t\t(optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
-	echo -e "\t\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
-	echo -e "\t\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
+	echo -e "\t\tWhen adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options."
 	echo -e "${COLOR_BOLD}Window${COLOR_RESET}"
 	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position)."
 	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
@@ -62,10 +59,13 @@ show_help() {
 	echo -e "\t\tSet the window's always on top behaviour. Activate with 0, deactivate with 1."
 	echo -e "\t${COLOR_BOLD}--maximize${COLOR_RESET}"
 	echo -e "\t\tMaxmize the window to fullscreen."
-	echo -e "\t${COLOR_BOLD}--alpha, transparency${COLOR_RESET} <alpha>"
+	echo -e "\t${COLOR_BOLD}--alpha, --transparency${COLOR_RESET} <alpha>"
 	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1."
 	echo -e "\t${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>"
 	echo -e "\t\tSet the window icon."
+	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
+	echo -e "\t\tSet the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234."
+	
 	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
 	echo -e "\t${COLOR_BOLD}--iconify${COLOR_RESET}"
@@ -157,16 +157,31 @@ show_help() {
 	echo -e "\t\t\t\tCode to be executed when an item is chosen. Also see --command note below."
 	echo -e "\t\tGet:"
 	echo -e "\t\t\tPrints the selected value, e.g. \"option1\" when the first value is chosen."
-	echo -e "\t--disabled <switch>"
-	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
 	echo
+	echo -e "${COLOR_BOLD}General element options${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}-x <x-position>${COLOR_RESET}"
+	echo -e "\t(optional) ${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}-y <y-position>${COLOR_RESET}"
+	echo -e "\t(optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}--disabled${COLOR_RESET} <switch>"
+	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
+	echo -e "\t${COLOR_BOLD}--notheme, --nostyle${COLOR_RESET}"
+	echo -e "\t\tMake the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!). Typically only needed when you want to style the element customly. --It is not possible to apply individual colors to themed elements. This does not apply to the text element, but you can pass this option there either way. Sorry about this mess :( Tk themes just work like that. - Example: \"tkbash mygui button [position args..] -t Click --notheme --background '#789987'\""
+	echo -e "\t${COLOR_BOLD}--foreground, --foregroundcolor, --color, --textcolor, --fg${COLOR_RESET} <color>"
+	echo -e "\t\tSet the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation #ff1234. Important: element needs to have been created with --notheme."
+	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
+	echo -e "\t\tSet the background color. Use common color names like red, yellow etc. or hex notation #ff1234. Important: element needs to have been created with --notheme."
+	echo
+	echo -e "${COLOR_BOLD}Additional notes${COLOR_RESET}"
 	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command contents will be written into a temp file and then called on action. You can preceed this with your custom shebang. Thus, session variables cannot be accessed."
 }
 
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,nostyle
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@") || die 27
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -199,7 +214,7 @@ while true; do
 		--hotkey|--shortcut|--bind) HOTKEY="$2" && shift 2 ;;
 		-t|--text|--content) CONTENT="$2" && shift 2 ;;
 		--tk|--tkcommand) TKCOMMAND="$2" && shift 2 ;;
-		--disabled) DISABLED="$2" && shift 2 ;;
+		--disabled|--disable) DISABLED="$2" && shift 2 ;;
 		--image) IMAGE="$2" && shift 2 ;;
 		--group) GROUP="$2" && shift 2 ;;
 		--ignore-return|--ignore-newline|--entry|--one-row) IGNORE_RETURN="1" && shift ;;
@@ -210,6 +225,10 @@ while true; do
 		--notitlebar|--nobar|--nocaption|--nodecorations|--nodecoration|--overrideredirect|--tooltip|--popup) NOTITLEBAR=1 && shift ;;
 		--onclick) ON_CLICK=1 && shift;;
 		--scrollbar) SCROLLBAR="$2" && shift 2 ;;
+		--foreground|--foregroundcolor|--color|--colour|--foregroundcolour|--textcolor|--textcolour|--fg) FOREGROUND="$2" && shift 2 ;;
+		--background|--backgroundcolor|--backgroundcolour|--bck|--bg) BACKGROUND="$2" && shift 2 ;;
+		--debug|--print|--log) DEBUG="1" && shift ;;
+		--notheme|--nostyle) NOTHEME="1" && shift ;;
 		--)
 			shift
 			break ;;
@@ -258,7 +277,7 @@ fi
 ################################# helper functions
 
 tcl_esc() {
-	#fixme wtf
+	#todo wtf
 	# http://tcl.tk/man/tcl8.5/TclCmd/Tcl.htm
 	echo "$1" |sed 's/\\/\\\\/g' |sed 's/"/\\"/g' |sed 's/\$/\\\$/g' |sed 's/\[/\\\[/g' |sed 's/\]/\\\]/g' |sed 's/{/\\{/g' |sed 's/}/\\}/g'
 }
@@ -274,6 +293,8 @@ write_command_file() {
 wish_exec() {
 	# communicate unidirectionally with running wish process
 	echo "$1" >"$WISH_PIPE"
+	[ -v DEBUG ] && echo "$1" >&2
+	return 0
 }
 
 wish_get() {
@@ -289,6 +310,7 @@ wish_get() {
 		} else {
 			exec echo \"________EMPTY________\" > $(tcl_str "$COMMUNICATION_FILE")
 		}" # todo: ^ really bad error handling. use another pipe?
+		# todo ^ put into tcl function???
 
 	# wait for response: cannot use timeout due to weird busybox behaviour
 	(
@@ -417,6 +439,7 @@ handle_window_commands() {
 		[ ! -v COMMAND ] && echo "on-click command also needs the --command option." && die 26
 		write_command_file "onclick" "$COMMAND"
 	fi
+	[ -v BACKGROUND ] && wish_exec ".w configure -background $(tcl_str "$BACKGROUND")" # todo -v? -n? inconsistent usage
 	return 0
 }
 # custom user tk commands to be executed directly
@@ -450,11 +473,15 @@ analyse_varname() {
 	return 0
 }
 
+themed() {
+	[ -v NOTHEME ] && echo $1 || echo "ttk::$1"
+}
+
 handle_element_commands() {
 	case "$TYPE" in
 		tbutton|button|ttk::button|submit)
 			# set up element
-			[ $IS_NEW = 1 ] && wish_exec "ttk::button $WVAR_ESC -command \"onaction $WVAR_ESC\""
+			[ $IS_NEW = 1 ] && wish_exec "$(themed button) $WVAR_ESC -command \"onaction $WVAR_ESC\""
 			# parse non-place options
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			;;
@@ -465,10 +492,9 @@ handle_element_commands() {
 			fi
 			if [ "$SCROLLBAR" == 0 ]; then
 				wish_exec "place forget ${WVAR_ESC}_scroll"
-			elif [ "$SCROLLBAR" == 1 ] ||
-				([ -z "$SCROLLBAR" ] && [[ "$(wish_get "winfo ismapped ${WVAR_ESC}_scroll")" == 1 ]]) # no scrollbar option, but scrollbar exists: this is a follow-up command for this text-element. in case it contains positional params, update scrollbar:  // todo check -n X || -n Y etc. ?
-			then
-			 	text_dimensions=($(wish_get "exec echo \"[winfo x $WVAR_ESC] [winfo y $WVAR_ESC] [winfo width $WVAR_ESC] [winfo height $WVAR_ESC]\""))
+			elif [ "$SCROLLBAR" == 1 ] || [[ "$(wish_get "winfo ismapped ${WVAR_ESC}_scroll")" == 1 ]]; then
+				# no scrollbar option, but scrollbar exists: this is a follow-up command for this text-element. in case it contains positional params, update scrollbar:  // todo check -n X || -n Y etc. ?
+			 	local text_dimensions=($(wish_get "exec echo \"[winfo x $WVAR_ESC] [winfo y $WVAR_ESC] [winfo width $WVAR_ESC] [winfo height $WVAR_ESC]\""))
 				[ -z "$X" ] && X=${text_dimensions[0]}; [ -z "$Y" ] && Y=${text_dimensions[1]}; [ -z "$WIDTH" ] && WIDTH=${text_dimensions[2]}; [ -z "$HEIGHT" ] && HEIGHT=${text_dimensions[3]}
 				wish_exec "place ${WVAR_ESC}_scroll -x $((X+WIDTH)) -y $((Y)) -width 16 -height $((HEIGHT))"
 			fi
@@ -476,13 +502,13 @@ handle_element_commands() {
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $WVAR_ESC \"<Return>\" { break }"
 			;;
 		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::label $WVAR_ESC -justify left -anchor nw"
+			[ $IS_NEW = 1 ] && wish_exec "$(themed label) $WVAR_ESC -justify left -anchor nw"
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v IMAGE ] && wish_exec "image create photo imgobj$WVAR_ESC -file $(tcl_str "${IMAGE}")" && wish_exec "$WVAR_ESC configure -image imgobj$WVAR_ESC"
 			[ -n "$WIDTH" ] && wish_exec "$WVAR_ESC configure -wraplength $(tcl_str "$WIDTH")" # change width / add element: enable word wrap
 			;;
 		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
-			[ $IS_NEW = 1 ] && wish_exec "ttk::checkbutton $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
+			[ $IS_NEW = 1 ] && wish_exec "$(themed checkbutton) $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
@@ -501,7 +527,7 @@ handle_element_commands() {
 				#zero-indexed:
 				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
-				wish_exec "ttk::radiobutton $WVAR_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction $WVAR_ESC\" -value ${radionumber}"
+				wish_exec "$(themed radiobutton) $WVAR_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction $WVAR_ESC\" -value ${radionumber}"
 			 fi
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			if [ "$SELECTED" == 1 ]; then
@@ -511,7 +537,7 @@ handle_element_commands() {
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "ttk::combobox $WVAR_ESC -state readonly"
+				wish_exec "$(themed combobox) $WVAR_ESC -state readonly"
 				wish_exec "bind $WVAR_ESC <<ComboboxSelected>> \"onaction $WVAR_ESC\""
 			fi
 			if [ -n "$CONTENT" ]; then
@@ -532,12 +558,14 @@ handle_element_commands() {
 			echo "element >$TYPE< not supported." ; die 5
 			;;
 	esac
-	# disabled option
+	### general options
 	if [ -n "$DISABLED" ]; then
 		[ "$DISABLED" = 0 ] && DISABLED=normal || DISABLED=disabled
 		wish_exec "$WVAR_ESC configure -state ${DISABLED}"
 	fi
-	# create command file (label -c "..." would be possible, creates file but no action)
+	[ -v FOREGROUND ] && wish_exec "$WVAR_ESC configure -foreground $(tcl_str "$FOREGROUND")"
+	[ -v BACKGROUND ] && wish_exec "$WVAR_ESC configure -background $(tcl_str "$BACKGROUND")"
+	# create/override command file (label -c "..." would be possible, creates file but no action)
 	[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&

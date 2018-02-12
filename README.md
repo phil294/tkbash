@@ -5,7 +5,7 @@ Build fancy graphical user interfaces with simple bash commands! Inspired by [Au
 ![tkbash-gui](https://i.imgur.com/J8XUtSB.png)
 ```bash
 tkbash 1 label label1 --relx 0.4 -y 10 -w 130 -h 20 -t "I like bananas."
-tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green|Blue"
+tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green||Blue"
 tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
     tkbash 1 text1 -t ''
     notify-send \"You selected color \$(tkbash 1 get select1)! \""
@@ -30,7 +30,7 @@ tkbash 1 button1 -t "new button text"
 - Entire functionality of Tk available if desired via `--tkcommand` (see end of this page)
 - Configure multiple GUIs that access each other
 
-This repository is fairly new. If you experience any issues, please open an issue above or contact eochgls@web.de. Commits welcome.
+This repository is fairly new. If you experience any issues or think that some cool stuff is missing, please open an issue above or contact eochgls@web.de. Commits welcome.
 
 Snapshot of `tkbash --help`:
 
@@ -44,8 +44,11 @@ USAGE:
 		Print the value of the associated element.
 	tkbash <gui_id> window [-options...]
 		Set window properties.
+
 	tkbash <gui_id> [<variable>] --tkcommand <command>
-		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -background green'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'". Note: toplevel root window in tkbash is ".w".
+		Execute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. "--tkcommand" can also be "--tk". Variable can be ommitted for full access. Example: "tkbash mygui mybutton --tkcommand 'configure -font verdana'" or "tkbash mygui --tkcommand 'wm maxsize .w 200 200'". Note: toplevel root window in tkbash is ".w".
+	[any command...] --debug, --print, --log
+		Print all commands sent to the wish background process (Tcl/Tk code) to stderr. For debugging.
 
 
 		gui_id
@@ -55,13 +58,7 @@ USAGE:
 		variable
 			Variable to hold the value associated with the element.
 
-		When adding an element for the first time, positional options are required:
-		-x <x-position>
-		-X, --relx <x-position>
-		-y <y-position>
-		-Y, --rely <y-position>
-		-w, --width <width>
-		-h, --height <height>
+		When adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options.
 Window
 Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position).
 	--theme <themename>
@@ -72,10 +69,12 @@ Set options for the entire interface / window as described above. You can set wi
 		Set the window's always on top behaviour. Activate with 0, deactivate with 1.
 	--maximize
 		Maxmize the window to fullscreen.
-	--alpha, transparency <alpha>
+	--alpha, --transparency <alpha>
 		Set the transparency of the entire window. Floating value between 0 and 1.
 	--icon <iconpath>
 		Set the window icon.
+	--background, --backgroundcolor, --bck, --bg <color>
+		Set the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation like #ff1234.
 	--resizable <switch>
 		Set the window's resizable behaviour. Activate with 0, deactivate with 1.
 	--iconify
@@ -85,17 +84,17 @@ Set options for the entire interface / window as described above. You can set wi
 	--show
 		Set the window visible by re-attaching it to the Winodow Manager.
 	--close, --exit, --quit, --destroy
-		Destroy, close, exit, die, kill, waste the window.
+		Close the window programmatically. This is equal to the user pressing the X button or pressing alt+f4.
 	--hotkey, --bind, --shortcut
-		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'"
+		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'" Also see --command note below.
 	--onclose
-		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished.
+		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished. Also see --command note below.
 	--exist
 		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 	--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect
 		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close).
 	--onclick
-		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclick --command 'echo You clicked the window.'"
+		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclick --command 'echo You clicked the window.'" Also see --command note below.
 
 ELEMENTS
 	button / submit
@@ -103,7 +102,7 @@ ELEMENTS
 			-t, --text, --content <text>
 				The text that will be displayed on the button.
 			-c, --command <command>
-				Bash code to be executed when the element is clicked.
+				Code to be executed when the element is clicked. Also see --command note below.
 		Get:
 			You cannot retrieve any value from a button.
 	text / input / edit / textfield / textarea
@@ -128,7 +127,7 @@ ELEMENTS
 		Display an image.
 		Options:
 			--image <path>
-				Path of the image to be shown. Note: currently seems to only support png. This needs to be fixed somehow.
+				Path of the image to be shown. Not all formats are supported. (yes: png, no: jpg)
 		Get:
 			You cannot retrieve any value from an image.
 		Note: Internally, this does the same like 'label', meaning these two element names are interchangeable.
@@ -138,7 +137,7 @@ ELEMENTS
 			-t, --text, --content <text>
 				Set the text to be displayed next to the tick.
 			-c, --command <command>
-				Bash code to be executed when the element is clicked.
+				Code to be executed when the element is clicked. Also see --command note below.
 			--selected, --checked
 				Set selected state to 1.
 			--deselected, --unchecked
@@ -153,7 +152,7 @@ ELEMENTS
 			-t, --text, --content <text>
 				Set the text to be displayed next to the radiobutton.
 			-c, --command <command>
-				Bash code to be executed when the element is clicked.
+				Code to be executed when the element is clicked. Also see --command note below.
 			--selected, --checked
 				Set this radio as the selected one from its group.
 		Get:
@@ -164,21 +163,36 @@ ELEMENTS
 			-t, --text, --content <text>
 				A pipe-delimited list (e.g. "option1|option2|option3") of options for this select which the user will be able to choose from. Set the default value by appending two pipes. For example "option1|option2||option3" to have option2 be selected by default. Otherwise, the first one will be selected.
 			-c, --command <command>
-				Bash code to be executed when an item is chosen.
+				Code to be executed when an item is chosen. Also see --command note below.
 		Get:
 			Prints the selected value, e.g. "option1" when the first value is chosen.
+
+General element options
+	-x <x-position>
+	(optional) -X, --relx <x-position>
+	-y <y-position>
+	(optional) -Y, --rely <y-position>
+	-w, --width <width>
+	-h, --height <height>
 	--disabled <switch>
 		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1.
+	--notheme, --nostyle
+		Make the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!). Typically only needed when you want to style the element customly. --It is not possible to apply individual colors to themed elements. This does not apply to the text element, but you can pass this option there either way. Sorry about this mess :( Tk themes just work like that. - Example: "tkbash mygui button [position args..] -t Click --notheme --background '#789987'"
+	--foreground, --foregroundcolor, --color, --textcolor, --fg <color>
+		Set the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation like #ff1234. Important: element needs to have been created with --notheme.
+	--background, --backgroundcolor, --bck, --bg <color>
+		Set the background color. Use common color names like red, yellow etc. or hex notation like #ff1234. Important: element needs to have been created with --notheme.
 
-Note on the -c, --command option: The command passed will be executed asynchronously from within a subshell, as a file, proceeded with #!/bin/bash. Thus, session variables cannot be accessed.
+Additional notes
+Note on the -c, --command option: The command contents will be written into a temp file and then called on action. You can preceed this with your custom shebang. Thus, session variables cannot be accessed.
 ```
 
 ## Bonus stuff
 
-### Coloring elements
-This feature (like much much more) is not supported by tkbash itself (yet), use `--tkcommand`:
+### Change the font
+This feature (like much more) is not supported by tkbash itself (yet), use `--tkcommand`:
 ```bash
-tkbash 1 label1 --tkcommand 'configure -background yellow'
+tkbash 1 label1 --tkcommand 'configure -font "verdana 30"'
 ```
 
 ### Drag+drop
@@ -197,13 +211,7 @@ Example of a basic popup (similar to notify-send) that closes itself and opens u
 
 ![tkbash-popup](https://i.imgur.com/M9S6yra.png)
 ```bash
-popup_text="Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu. 
-	Ut porro eripuit evertitur pro,
-	nostro minimum vix et.
-	Amen."
-tkbash popup window --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
-tkbash popup p p -x 10 -y 10 -w 330 -h 80 -t "$popup_text"
-
-tkbash popup --tk ".w configure -background black"
-tkbash popup p --tk "configure -background black -foreground white"
+popup_text=$'Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu.\nUt porro eripuit evertitur pro,\nnostro minimum vix et.\nAmen.'
+tkbash popup window --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
+tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "$popup_text"
 ```
