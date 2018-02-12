@@ -29,7 +29,7 @@ show_help() {
 	echo
 	echo "${COLOR_BOLD}USAGE${COLOR_RESET}:"
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<element>] <variable> [-options...]${COLOR_RESET}"
-	echo -e "\t\tAdd / edit element."
+	echo -e "\t\tAdd / edit element. For basic usage, you dont need anything else."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> get <variable>${COLOR_RESET}"
 	echo -e "\t\tPrint the value of the associated element."
 	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [-options...]${COLOR_RESET}"
@@ -49,6 +49,7 @@ show_help() {
 	echo -e "\t\t\tVariable to hold the value associated with the element."
 	echo
 	echo -e "\t\tWhen adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options."
+	echo
 	echo -e "${COLOR_BOLD}Window properties${COLOR_RESET}"
 	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position)."
 	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
@@ -76,15 +77,15 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}"
 	echo -e "\t\tClose the window programmatically. This is equal to the user pressing the X button or pressing alt+f4."
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'\" Also see --command note below."
+	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'\" Also see --command note below."
 	echo -e "\t${COLOR_BOLD}--onclose${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclose --command 'echo tkbash now exits.'\" The GUI will only exit once the --command has finished. Also see --command note below."
+	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui --onclose --command 'echo tkbash now exits.'\" The GUI will only exit once the --command has finished. Also see --command note below."
 	echo -e "\t${COLOR_BOLD}--exist${COLOR_RESET}"
 	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
 	echo -e "\t${COLOR_BOLD}--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect${COLOR_RESET}"
 	echo -e "\t\tImportant: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close)."
 	echo -e "\t${COLOR_BOLD}--onclick${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: \"tkbash mygui window --onclick --command 'echo You clicked the window.'\" Also see --command note below."
+	echo -e "\t\tAdd an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: \"tkbash mygui --onclick --command 'echo You clicked the window.'\" Also see --command note below."
 	echo
 	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit"

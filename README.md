@@ -39,7 +39,7 @@ Snapshot of `tkbash --help`:
 
 USAGE:
 	tkbash <gui_id> [<element>] <variable> [-options...]
-		Add / edit element.
+		Add / edit element. For basic usage, you dont need anything else.
 	tkbash <gui_id> get <variable>
 		Print the value of the associated element.
 	tkbash <gui_id> [-options...]
@@ -86,15 +86,15 @@ Set options for the entire interface / window as described above. You can set wi
 	--close, --exit, --quit, --destroy
 		Close the window programmatically. This is equal to the user pressing the X button or pressing alt+f4.
 	--hotkey, --bind, --shortcut
-		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui window --hotkey Escape --command 'echo You pressed Escape.'" Also see --command note below.
+		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'" Also see --command note below.
 	--onclose
-		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished. Also see --command note below.
+		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished. Also see --command note below.
 	--exist
 		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 	--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect
-		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close).
+		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see --close).
 	--onclick
-		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui window --onclick --command 'echo You clicked the window.'" Also see --command note below.
+		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui --onclick --command 'echo You clicked the window.'" Also see --command note below.
 
 ELEMENTS
 	button / submit
@@ -212,6 +212,6 @@ Example of a basic popup (similar to notify-send) that closes itself and opens u
 ![tkbash-popup](https://i.imgur.com/M9S6yra.png)
 ```bash
 popup_text=$'Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu.\nUt porro eripuit evertitur pro,\nnostro minimum vix et.\nAmen.'
-tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup window --close"
+tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup --close"
 tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "$popup_text"
 ```
