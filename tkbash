@@ -19,7 +19,7 @@ BASH_MINIMUM_VERSION="4.2"
 #[[ $(sort -V <<< $BASH_VERSION$'\n'$BASH_MINIMUM_VERSION |head -1) != $BASH_MINIMUM_VERSION ]] && echo "Minimum bash version required: $BASH_MINIMUM_VERSION" && die 24
 #command -v wish >/dev/null || (echo "You need to have wish (tcl/tk) installed." && die 25)
 
-TMP="/tmp/__tkbash1.1_"
+TMP="/tmp/__tkbash1.0_"
 mkdir -p "$TMP"
 
 show_help() {
@@ -78,7 +78,7 @@ show_help() {
 	echo -e "\t\tClose the window programmatically. This is equal to the user pressing the X button or pressing alt+f4."
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'\" Also see --command note below."
-	echo -e "\t${COLOR_BOLD}--onclose${COLOR_RESET}"
+	echo -e "\t${COLOR_BOLD}--onclose, --onexit${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui --onclose --command 'echo tkbash now exits.'\" The GUI will only exit once the --command has finished. Also see --command note below."
 	echo -e "\t${COLOR_BOLD}--exist${COLOR_RESET}"
 	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
@@ -181,7 +181,7 @@ show_help() {
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,nostyle
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onexit,onexited,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,nostyle
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@") || die 27
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -220,7 +220,7 @@ while true; do
 		--ignore-return|--ignore-newline|--entry|--one-row) IGNORE_RETURN="1" && shift ;;
 		--selected|--select|--check|--checked) SELECTED=1 && shift ;;
 		--unselected|--deselected|--unselect|--deselect|--uncheck|--unchecked) SELECTED=0 && shift ;;
-		--onclose|--onclosed) ON_CLOSE=1 && shift ;;
+		--onclose|--onclosed|--onexit|--onexited) ON_CLOSE=1 && shift ;;
 		--exist|--exists) EXIST=1 && shift ;;
 		--notitlebar|--nobar|--nocaption|--nodecorations|--nodecoration|--overrideredirect|--tooltip|--popup) NOTITLEBAR=1 && shift ;;
 		--onclick) ON_CLICK=1 && shift;;
@@ -246,7 +246,9 @@ GET_REQUEST=0
 [ -z "$GUI_ID" ] && echo "specify gui id!" && die 1
 require_variable() {
 	[ -z "$VAR_NAME" ] && echo "specify variable name!" && die 14
-	[[ "$VAR_NAME" == *" "* ]] && echo "variable cannot contain spaces!" && die 21
+	[[ $VAR_NAME == *" "* ]] && echo "variable cannot contain spaces!" && die 21
+	[[ $VAR_NAME == "window" ]] && echo "keyword 'window' is preserved." && die 21
+	[[ $VAR_NAME == "get" ]] && echo "keyword 'get' is preserved." && die 21
 	return 0
 }
 if [ "$2" = "get" ] && [ $# = 3 ]; then
@@ -254,6 +256,10 @@ if [ "$2" = "get" ] && [ $# = 3 ]; then
 	VAR_NAME="$3"
 	GET_REQUEST=1
 	require_variable
+elif [ "$2" = "window" ] && [ $# = 2 ]; then
+	ACTION="window"
+	echo "The 'window' keyword is no longer needed for global window attributes! You can write 'tkbash mygui --title hi' now instead of 'tkbash mygui window --title hi'. But both still work."
+	VAR_NAME=
 elif [ $# = 2 ]; then
 	VAR_NAME="$2"
 	require_variable
