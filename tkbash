@@ -480,13 +480,13 @@ themed() {
 
 handle_element_commands() {
 	case "$TYPE" in
-		tbutton|button|ttk::button|submit)
+		tbutton|button|ttk::button|submit|b)
 			# set up element
 			[ $IS_NEW = 1 ] && wish_exec "$(themed button) $WVAR_ESC -command \"onaction $WVAR_ESC\""
 			# parse non-place options
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			;;
-		text|tk::text|input|edit|textfield|textarea)
+		text|tk::text|input|edit|textfield|textarea|t)
 			if [ $IS_NEW = 1 ]; then
 				wish_exec "tk::text $WVAR_ESC -yscrollcommand \"${WVAR_ESC}_scroll set\""
 				wish_exec "ttk::scrollbar ${WVAR_ESC}_scroll -command \"$WVAR_ESC yview\"" # placed seperately and dynamically below if desired by scrollbar option
@@ -502,25 +502,25 @@ handle_element_commands() {
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC delete 1.0 end" && wish_exec "$WVAR_ESC insert 1.0 $(tcl_str "$CONTENT")"
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $WVAR_ESC \"<Return>\" { break }"
 			;;
-		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p)
+		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|p|l)
 			[ $IS_NEW = 1 ] && wish_exec "$(themed label) $WVAR_ESC -justify left -anchor nw"
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v IMAGE ] && wish_exec "image create photo imgobj$WVAR_ESC -file $(tcl_str "${IMAGE}")" && wish_exec "$WVAR_ESC configure -image imgobj$WVAR_ESC"
 			[ -n "$WIDTH" ] && wish_exec "$WVAR_ESC configure -wraplength $(tcl_str "$WIDTH")" # change width / add element: enable word wrap
 			;;
-		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle)
+		tcheckbutton|checkbutton|ttk::checkbutton|checkbox|check|tick|toggle|cb)
 			[ $IS_NEW = 1 ] && wish_exec "$(themed checkbutton) $WVAR_ESC -variable $(tcl_esc $VAR_NAME) -command \"onaction $WVAR_ESC\""
 			[ -v CONTENT ] && wish_exec "$WVAR_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -n "$SELECTED" ] && wish_exec "set $(tcl_esc $VAR_NAME) $SELECTED"
 			;;
-		tradiobutton|radiobutton|ttk::radiobutton|radio)
+		tradiobutton|radiobutton|ttk::radiobutton|radio|r)
 			if [ $IS_NEW = 1 ]; then
 				[ -z "$GROUP" ] && echo "--group required" && die 19
 				### determine value: (#radiogroupmembers)+1
 				wish_exec "
 					set matched_children \"\"
 					foreach {child} [winfo children .w] {
-						if { [winfo class \"\$child\"] == \"TRadiobutton\" && [ \"\$child\" cget -variable] == $(tcl_str "$GROUP") } {
+						if { ([winfo class \"\$child\"] == \"TRadiobutton\" || [winfo class \"\$child\"] == \"Radiobutton\") && [ \"\$child\" cget -variable] == $(tcl_str "$GROUP") } {
 							append matched_children \"\n\${child}\"
 						}
 					}"
@@ -536,7 +536,7 @@ handle_element_commands() {
 				wish_exec "set $(tcl_esc "$GROUP") $radionumber"
 			fi
 			;;
-		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu)
+		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu|s)
 			if [ $IS_NEW = 1 ]; then
 				wish_exec "$(themed combobox) $WVAR_ESC -state readonly"
 				wish_exec "bind $WVAR_ESC <<ComboboxSelected>> \"onaction $WVAR_ESC\""
@@ -583,7 +583,7 @@ handle_get_commands() {
 		text)
 			echo "$(wish_get "$WVAR_ESC get 1.0 end")"
 			;;
-		tcheckbutton)
+		tcheckbutton|checkbutton)
 			wish_exec "
 				set check_value \"\"
 				if {[info exists $(tcl_esc "$VAR_NAME")]} {
@@ -591,7 +591,7 @@ handle_get_commands() {
 				}"
 			echo "$(wish_get "exec echo \$check_value")"
 			;;
-		tradiobutton)
+		tradiobutton|radiobutton)
 			local radio_var="$(wish_get "$WVAR_ESC cget -variable")"
 			wish_exec "
 				set radio_value \"\"
@@ -600,7 +600,7 @@ handle_get_commands() {
 				}"
 			echo "$(wish_get "exec echo \$radio_value")"
 			;;
-		tcombobox)
+		tcombobox|combobox)
 			echo "$(wish_get "$WVAR_ESC get")"
 			;;
 		*)
