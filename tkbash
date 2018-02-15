@@ -168,7 +168,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}--disabled${COLOR_RESET} <switch>"
 	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
 	echo -e "\t${COLOR_BOLD}--notheme, --nostyle${COLOR_RESET}"
-	echo -e "\t\tMake the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!). Typically only needed when you want to style the element customly. --It is not possible to apply individual colors to themed elements. This does not apply to the text element, but you can pass this option there either way. Sorry about this mess :( Tk themes just work like that. - Example: \"tkbash mygui button [position args..] -t Click --notheme --background '#789987'\""
+	echo -e "\t\tMake the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!). Typically only needed when you want to style the element customly. --It is not possible to apply individual colors to themed elements. Exceptions: Combobox (select) requires a theme / text never uses a theme but you can pass the option there either way. -> Styling a combobox is not natively supported by tkbash. Sorry about this mess :( Tk themes just work like that. - Example: \"tkbash mygui button [position args..] -t Click --notheme --background '#789987'\""
 	echo -e "\t${COLOR_BOLD}--foreground, --foregroundcolor, --color, --textcolor, --fg${COLOR_RESET} <color>"
 	echo -e "\t\tSet the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation #ff1234. Important: element needs to have been created with --notheme."
 	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
@@ -538,7 +538,7 @@ handle_element_commands() {
 			;;
 		tcombobox|combobox|ttk:combobox|select|dropdown|dropdownmenu|s)
 			if [ $IS_NEW = 1 ]; then
-				wish_exec "$(themed combobox) $WVAR_ESC -state readonly"
+				wish_exec "ttk::combobox $WVAR_ESC -state readonly" # there is no unthemed combobox
 				wish_exec "bind $WVAR_ESC <<ComboboxSelected>> \"onaction $WVAR_ESC\""
 			fi
 			if [ -n "$CONTENT" ]; then
