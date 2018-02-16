@@ -1,26 +1,27 @@
 # tkbash
-Build fancy graphical user interfaces with simple bash commands! Inspired by [AutoHotkey](https://autohotkey.com/docs/commands/Gui.htm)'s GUI.
-## Bash wrapper for Tcl/Tk gui
+## Build fancy GUIs via command line!
+Bash wrapper for Tcl/Tk gui. Inspired by [AutoHotkey](https://autohotkey.com/docs/commands/Gui.htm)'s GUI
 
-![tkbash-gui](https://i.imgur.com/J8XUtSB.png)
+![tkbash-gui](http://i.imgur.com/VcacY87.png)
 ```bash
-tkbash 1 label label1 --relx 0.4 -y 10 -w 130 -h 20 -t "I like bananas."
-tkbash 1 select select1 --relx 0.4 -y 30 -w 130 -h 20 -t "Black|White|Green||Blue"
-tkbash 1 button button1 -x 165 -y 75 -w 120 -h 30 -t "Delete text" --command "
-    tkbash 1 text1 -t ''
-    notify-send \"You selected color \$(tkbash 1 get select1)! \""
-tkbash 1 text text1 -x 165 -y 105 -w 120 -h 120 -t "Yorem Lipsum"
-tkbash 1 image image1 -x 10 -y 60 -w 125 -h 120 --image "kitten.png"
-tkbash 1 --theme clam -w 290 -h 250 --title "I am butiful" --alwaysontop 1 --icon "kitten.png"
-tkbash 1 --hotkey Escape --command "echo You pressed Escape."
-```
-later on:
-```bash
-tkbash 1 button1 -t "new button text"
+tkbash gui1 --theme clam --title "Fruit chooser" -w 405 -h 245
+tkbash gui1 --hotkey Escape --command 'tkbash gui1 --close'
+# elements
+tkbash gui1 label  label1  -x 5   -y 5   -w 130 -h 30  --text "I like bananas."
+tkbash gui1 select select1 -x 5   -y 40  -w 130 -h 30  --text "Me too|I prefer cookies||Apples|???"
+tkbash gui1 button button1 -x 140 -y 5   -w 130 -h 30  --text "Say hello" --command "notify-send hi"
+tkbash gui1 edit   edit1   -x 140 -y 40  -w 115 -h 94  --text "Yorem Lipsum yolo git amet" \
+	--scrollbar 1 --background "grey" --foreground "yellow" --style "font:verdana 12"
+tkbash gui1 image  image1  -x 275 -y 5   -w 125 -h 127 --image "kitten.png"
+tkbash gui1 radio  radio1  -x 5   -y 140 -w 130 -h 30  --text "Option 0" --group group1
+tkbash gui1 radio  radio2  -x 5   -y 175 -w 130 -h 30  --text "Option 1" --group group1 --selected
+tkbash gui1 radio  radio3  -x 5   -y 210 -w 130 -h 30  --text "Option 2" --group group1 \
+	--command 'tkbash gui1 label2 --text "You selected option $(tkbash gui1 get radio1)."'
+tkbash gui1 label  label2  -x 140 -y 175 -w 395 -h 30 --text "?" --fg '#ff5555'
 ```
 
+- **Same syntax for adding and editing elements**
 - Pure bash code (internally translates into respective [Tcl/Tk](https://www.tcl.tk/) code, sent to `wish` background process)
-- Same syntax for adding and editing elements
 - Gui runs in background, accessible from everywhere and everytime using `tkbash <gui-id> dosomething...`
 - Pass callback code directly as `--command <command>`
 - Print element contents with `get <variable>`
@@ -28,7 +29,17 @@ tkbash 1 button1 -t "new button text"
 - Every element gets placed with absolute or window-relative coordinates. No geometry managers supported.
 - Hotkey support
 - Entire functionality of Tk available if desired via `--tkcommand` (see end of this page)
+- Not very fast (above example takes ~0.35 sec)
 - Configure multiple GUIs that access each other
+
+### Popup
+Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
+
+![tkbash-popup](https://i.imgur.com/M9S6yra.png)
+```bash
+tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup --close"
+tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "popup text..."
+```
 
 This repository is fairly new. If you experience any issues or think that some cool stuff is missing, please open an issue above or contact eochgls@web.de. Commits welcome.
 
@@ -201,14 +212,4 @@ tkbash 1 --tk 'package require tkdnd
     bind .w.image1 <<Drop>> {
         exec notify-send "You dropped %D"
     }'
-```
-
-### Popup
-Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
-
-![tkbash-popup](https://i.imgur.com/M9S6yra.png)
-```bash
-popup_text=$'Click me! Lorem ipsum dolor sit amet. nibh etiam sed in, facilis fuisset molestie pri eu.\nUt porro eripuit evertitur pro,\nnostro minimum vix et.\nAmen.'
-tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup --close"
-tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "$popup_text"
 ```
