@@ -15,7 +15,7 @@ die() {
 }
 
 BASH_MINIMUM_VERSION="4.2"
-# todo does not support busybox
+# fixme does not support busybox
 #[[ $(sort -V <<< $BASH_VERSION$'\n'$BASH_MINIMUM_VERSION |head -1) != $BASH_MINIMUM_VERSION ]] && echo "Minimum bash version required: $BASH_MINIMUM_VERSION" && die 24
 #command -v wish >/dev/null || (echo "You need to have wish (tcl/tk) installed." && die 25)
 
@@ -453,7 +453,6 @@ analyse_varname() {
 	local resp
 	if resp=$(wish_get "exec echo [winfo class $W_VAR_NAME_ESC]"); then
 		TYPE="${resp,,}"
-		echo $resp
 	else
 		# var still unkwnown -> new element. use given ACTION
 		IS_NEW=1
@@ -560,10 +559,10 @@ handle_element_commands() {
 	if ([ -v FOREGROUND ] || [ -v BACKGROUND ]); then #styling ahead
 		local is_themed=$(wish_get "$W_VAR_NAME_ESC configure -style")
 		if [[ -z $is_themed ]]; then
-			[ -v FOREGROUND ] && wish_exec "$W_VAR_NAME_ESC configure -foreground $(tcl_str "$FOREGROUND")"
+			[ -v FOREGROUND ] && wish_exec "$W_VAR_NAME_ESC configure -foreground $(tcl_str "$FOREGROUND")" # fixme checkbox, radio special coloring
 			[ -v BACKGROUND ] && wish_exec "$W_VAR_NAME_ESC configure -background $(tcl_str "$BACKGROUND")"
 		else
-			echo "cannot style themed element!" # todo
+			echo "cannot style themed element!" # fixme
 		fi
 	fi
 	# create/override command file (label -c "..." would be possible, creates file but no action)
@@ -584,7 +583,7 @@ handle_get_commands() {
 			echo "$(wish_get "$W_VAR_NAME_ESC get 1.0 end")"
 			;;
 		tcheckbutton|checkbutton)
-			wish_get "exec echo \$$(tcl_esc "$VAR_NAME"d)"
+			wish_get "exec echo \$$(tcl_esc "$VAR_NAME")"
 			;;
 		tradiobutton|radiobutton)
 			local radio_var="$(wish_get "$W_VAR_NAME_ESC cget -variable")"
