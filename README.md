@@ -59,10 +59,11 @@ USAGE:
 			Variable to hold the value associated with the element.
 
 		When adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options.
+
 Window properties
 Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position).
 	--theme <themename>
-		Set the look and feel used by all ttk-controls. Available themes usually include clam, alt, default and classic.
+		Set the look and feel used by all all elements. Available themes usually include clam, alt, default and classic. Important: If you use this option, any individual styling to themed elements might be gone and needs to be reapplied.
 	--title <title>
 		Set the window title.
 	--alwaysontop, --topmost <switch>
@@ -74,7 +75,7 @@ Set options for the entire interface / window as described above. You can set wi
 	--icon <iconpath>
 		Set the window icon.
 	--background, --backgroundcolor, --bck, --bg <color>
-		Set the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation like #ff1234.
+		Set the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234.
 	--resizable <switch>
 		Set the window's resizable behaviour. Activate with 0, deactivate with 1.
 	--iconify
@@ -87,17 +88,17 @@ Set options for the entire interface / window as described above. You can set wi
 		Close the window programmatically. This is equal to the user pressing the X button or pressing alt+f4.
 	--hotkey, --bind, --shortcut
 		Add an action to be executed when a key ("sequence") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: "tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'" Also see --command note below.
-	--onclose
+	--onclose, --onexit
 		Add an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: "tkbash mygui --onclose --command 'echo tkbash now exits.'" The GUI will only exit once the --command has finished. Also see --command note below.
 	--exist
 		Prints 1 if the specified <gui_id> belongs to a running window, 0 otherwise.
 	--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect
-		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see --close).
+		Important: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close).
 	--onclick
 		Add an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: "tkbash mygui --onclick --command 'echo You clicked the window.'" Also see --command note below.
 
 ELEMENTS
-	button / submit
+	button / submit / b
 		Options:
 			-t, --text, --content <text>
 				The text that will be displayed on the button.
@@ -105,7 +106,7 @@ ELEMENTS
 				Code to be executed when the element is clicked. Also see --command note below.
 		Get:
 			You cannot retrieve any value from a button.
-	text / input / edit / textfield / textarea
+	text / input / edit / textfield / textarea / t
 		A text element is a multiline input area for text.
 		Options:
 			--scrollbar <switch>
@@ -116,14 +117,14 @@ ELEMENTS
 				The user cannot type newlines. If combined with an appropriate height, this could also be used as a form input.
 		Get:
 			Prints the contents of the text field.
-	label / p
+	label / p / l
 		A label element displays plain text somewhere on the gui.
 		Options:
 			-t, --text, --content <text>
 				Set the contents of the label.
 		Get:
 			You cannot retrieve any value from a label.
-	image / picture / img / bmp / bitmap
+	image / picture / img / bmp / bitmap / i
 		Display an image.
 		Options:
 			--image <path>
@@ -131,7 +132,7 @@ ELEMENTS
 		Get:
 			You cannot retrieve any value from an image.
 		Note: Internally, this does the same like 'label', meaning these two element names are interchangeable.
-	checkbutton / checkbox / check / tick / toggle
+	checkbutton / checkbox / check / tick / toggle / cb
 		For boolean values. If neither --checked nor --unchecked is passed, the checkbutton is in a neither-state (pristine)
 		Options:
 			-t, --text, --content <text>
@@ -144,7 +145,7 @@ ELEMENTS
 				Set selected state to 0.
 		Get:
 			Prints 1 when checked, 0 when unchecked, nothing when pristine.
-	radiobutton / radio
+	radiobutton / radio / r
 		Multiple radiobuttons form a group. Only one radiobutton in a group can be active at the same time.
 		Options:
 			[required] --group <group-id>
@@ -157,7 +158,7 @@ ELEMENTS
 				Set this radio as the selected one from its group.
 		Get:
 			Every radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton is created.
-	combobox / select / dropdown / dropdownmenu
+	combobox / select / dropdown / dropdownmenu / s / c
 		Select one of many values. Behaves like a classical HTML-select (the Tk-state 'readonly' is active).
 		Options:
 			-t, --text, --content <text>
@@ -176,24 +177,20 @@ General element options
 	-h, --height <height>
 	--disabled <switch>
 		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1.
-	--notheme, --nostyle
-		Make the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!). Typically only needed when you want to style the element customly. --It is not possible to apply individual colors to themed elements. This does not apply to the text element, but you can pass this option there either way. Sorry about this mess :( Tk themes just work like that. - Example: "tkbash mygui button [position args..] -t Click --notheme --background '#789987'"
+	--notheme
+		Make the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!).
 	--foreground, --foregroundcolor, --color, --textcolor, --fg <color>
-		Set the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation like #ff1234. Important: element needs to have been created with --notheme.
+		Set the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation #ff1234.
 	--background, --backgroundcolor, --bck, --bg <color>
-		Set the background color. Use common color names like red, yellow etc. or hex notation like #ff1234. Important: element needs to have been created with --notheme.
+		Set the background color. Use common color names like red, yellow etc. or hex notation #ff1234.
+	--style <property:value>
+		You can set any arbitrary styling option with this syntax, even those which are not supported natively by tkbash. For a list of available properties, visit https://www.tcl.tk/man/tcl8.4/TkCmd/options.htm or https://wiki.tcl.tk/37973 or ...? (neither of them is complete it seems). Example: 'tkbash mygui mybutton --style "font:verdana 20"'
 
 Additional notes
 Note on the -c, --command option: The command contents will be written into a temp file and then called on action. You can preceed this with your custom shebang. Thus, session variables cannot be accessed.
 ```
 
 ## Bonus stuff
-
-### Change the font
-This feature (like much more) is not supported by tkbash itself (yet), use `--tkcommand`:
-```bash
-tkbash 1 label1 --tkcommand 'configure -font "verdana 30"'
-```
 
 ### Drag+drop
 Here is a minimal example of how drag'n'drop might be implemented for the image element from the above sample window. This supports files, text etc. This functionality is not supported natively because it needs an external library. Download here: http://wiki.tcl.tk/2768 & copy for example to /usr/share/tcltk/tclx.y/. The below code makes use of the `--tkcommand` option. So, everything starting from `package` on is tcl code.
