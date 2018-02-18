@@ -36,6 +36,7 @@ tkbash gui1 label  label2  -x 140 -y 175 -w 395 -h 30 --text "?" --fg '#ff5555'
 Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
 
 <img align="center" alt="tkbash-popup" src="https://i.imgur.com/M9S6yra.png">
+
 ```bash
 tkbash popup --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onclick -c "x-www-browser 'google.com'; tkbash popup --close"
 tkbash popup p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "popup text..."
