@@ -208,7 +208,7 @@ Note on the -c, --command option: The command contents will be written into a te
 Here is a minimal example of how drag'n'drop might be implemented for the image element from the above sample window. This supports files, text etc. This functionality is not supported natively because it needs an external library. Download here: http://wiki.tcl.tk/2768 & copy for example to /usr/share/tcltk/tclx.y/. The below code makes use of the `--tkcommand` option. So, everything starting from `package` on is tcl code.
 ```bash
 # full tkdnd reference: http://wiki.tcl.tk/36708
-tkbash 1 --tk 'package require tkdnd
+tkbash gui1 --tk 'package require tkdnd
     tkdnd::drop_target register .w.image1 *
     bind .w.image1 <<Drop>> {
         exec notify-send "You dropped %D"
