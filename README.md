@@ -78,6 +78,8 @@ Set options for the entire interface / window as described above. You can set wi
 		Set the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234.
 	--resizable <switch>
 		Set the window's resizable behaviour. Activate with 0, deactivate with 1.
+	--movebymouse, --movewithmouse, --drag <switch>
+		Enable or disable the ability of the window to be dragged with the mouse around the screen. Activate with 0, deactivate with 1. Note: If you are looking for drag&drop for external files, text etc., see the readme example at the end.
 	--iconify
 		Minimize the window.
 	--hide
@@ -175,6 +177,7 @@ General element options
 	(optional) -Y, --rely <y-position>
 	-w, --width <width>
 	-h, --height <height>
+
 	--disabled <switch>
 		Dissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1.
 	--notheme

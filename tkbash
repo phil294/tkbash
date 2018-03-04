@@ -68,6 +68,8 @@ show_help() {
 	echo -e "\t\tSet the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234."
 	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
 	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
+	echo -e "\t${COLOR_BOLD}--movebymouse, --movewithmouse, --drag${COLOR_RESET} <switch>"
+	echo -e "\t\tEnable or disable the ability of the window to be dragged with the mouse around the screen. Activate with 0, deactivate with 1. Note: If you are looking for drag&drop for external files, text etc., see the readme example at the end."
 	echo -e "\t${COLOR_BOLD}--iconify${COLOR_RESET}"
 	echo -e "\t\tMinimize the window."
 	echo -e "\t${COLOR_BOLD}--hide${COLOR_RESET}"
@@ -165,6 +167,7 @@ show_help() {
 	echo -e "\t(optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
 	echo -e "\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
+	echo
 	echo -e "\t${COLOR_BOLD}--disabled${COLOR_RESET} <switch>"
 	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
 	echo -e "\t${COLOR_BOLD}--notheme${COLOR_RESET}"
@@ -183,7 +186,7 @@ show_help() {
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onexit,onexited,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,style:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onexit,onexited,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,style:,movebymouse:,movewithmouse:,drag:
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@") || die 27
 if [[ $? -ne 0 ]]; then
 	die 2
@@ -232,6 +235,7 @@ while true; do
 		--debug|--print|--log) DEBUG="1" && shift ;;
 		--notheme|--nostyle) NOTHEME="1" && shift ;;
 		--style) STYLE="$2" && shift 2 ;;
+		--movebymouse|--movewithmouse|--drag) MOVE_BY_MOUSE="$2" && shift 2 ;;
 		--)
 			shift
 			break ;;
@@ -405,8 +409,54 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		wm protocol .w WM_DELETE_WINDOW {
 			onexit
 		}
-		# on user click: custom handler
-		bind .w <1> \"onaction onclick\"
+		# support move-by-click (window drag+drop) AND set onclick-listener
+		set enable_move_by_drag 0
+		set borderwidth_before_move_by_drag 0
+		set relief_befrore_move_by_drag flat
+		set offset_x_before_move_by_drag 0
+		set offset_y_before_move_by_drag 0 
+		proc topframe_mouse_keydown {} {
+			global enable_move_by_drag borderwidth_before_move_by_drag relief_befrore_move_by_drag offset_x_before_move_by_drag offset_y_before_move_by_drag
+			if { \$enable_move_by_drag } {
+				set borderwidth_before_move_by_drag [ .w cget -borderwidth ]
+				set relief_befrore_move_by_drag [ .w cget -relief ]
+				set winX [ winfo x .w ]
+				set winY [ winfo y .w ]
+				set pointerX [ winfo pointerx .w ]
+				set pointerY [ winfo pointery .w ]
+				set offset_x_before_move_by_drag [ expr { \$pointerX - \$winX } ]
+				set offset_y_before_move_by_drag [ expr { \$pointerY - \$winY } ]
+				.w configure -borderwidth 3
+				.w configure -relief ridge
+				after 25 move_by_drag_ticker
+			}
+		}
+		proc move_by_drag_ticker {} {
+			global offset_x_before_move_by_drag offset_y_before_move_by_drag
+			set pointerX [ winfo pointerx .w ]
+			set pointerY [ winfo pointery .w ]
+			set geom [ wm geometry .w ]
+			scan \$geom \"%dx%d+%d+%d\" width height decorationX decorationY
+			set winX [ winfo x .w ]
+			set winY [ winfo y .w ]
+			set decorationWidth [ expr { \$winX - \$decorationX } ]
+			set decorationHeight [ expr { \$winY - \$decorationY } ]
+			set new_X [ expr { \$pointerX - \$decorationWidth - \$offset_x_before_move_by_drag } ]
+			set new_Y [ expr { \$pointerY - \$decorationHeight - \$offset_y_before_move_by_drag } ]
+			wm geometry .w +\$new_X+\$new_Y
+			after 25 move_by_drag_ticker
+		}
+		proc topframe_mouse_keyup {} {
+			global enable_move_by_drag borderwidth_before_move_by_drag relief_befrore_move_by_drag
+			onaction onclick
+			if { \$enable_move_by_drag } {
+				.w configure -borderwidth \$borderwidth_before_move_by_drag
+				.w configure -relief \$relief_befrore_move_by_drag
+				after cancel move_by_drag_ticker
+			}
+		}
+		bind .w <ButtonPress-1> topframe_mouse_keydown
+		bind .w <ButtonRelease-1> topframe_mouse_keyup
 		"
 fi
 
@@ -414,7 +464,7 @@ handle_window_commands() {
 	[ -v TITLE ] && wish_exec "wm title .w $(tcl_str "${TITLE}")"
   if ([ -n "$WIDTH" ] && [ -n "$HEIGHT" ]); then
     if ([ -n "$X" ] && [ -n "$Y" ]); then
-      wish_exec "wm geometry .w $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")"
+      wish_exec "wm geometry .w $(tcl_str "${WIDTH}x${HEIGHT}+${X}+${Y}")" # todo independently from w/h
     else
       wish_exec "wm geometry .w $(tcl_str "${WIDTH}x${HEIGHT}")"
     fi
@@ -431,8 +481,8 @@ handle_window_commands() {
 	[ -n "$CLOSE" ] && wish_exec "onexit"
 	if [ -n "$HOTKEY" ]; then
 		[ ! -v COMMAND ] && echo "hotkey command also needs the --command option." && die 23
-		wish_exec "bind .w <$(tcl_esc "$HOTKEY")> \"onaction $(tcl_esc "$HOTKEY")\""
-		write_command_file "$HOTKEY" "$COMMAND"
+		wish_exec "bind .w <$(tcl_esc "$HOTKEY")> \"onaction onhotkey$(tcl_esc "$HOTKEY")\""
+		write_command_file "onhotkey$HOTKEY" "$COMMAND"
 	fi
 	if [ -n "$ON_CLOSE" ]; then
 		[ ! -v COMMAND ] && echo "on-close command also needs the --command option." && die 23
@@ -443,6 +493,7 @@ handle_window_commands() {
 		write_command_file "onclick" "$COMMAND"
 	fi
 	[ -v BACKGROUND ] && wish_exec ".w configure -background $(tcl_str "$BACKGROUND")" # todo -v? -n? inconsistent usage
+	[ -n "$MOVE_BY_MOUSE" ] && wish_exec "set enable_move_by_drag $(tcl_str "$MOVE_BY_MOUSE")"
 
 	# todo draggable
 
@@ -499,7 +550,7 @@ handle_element_commands() {
 			[ -v CONTENT ] && wish_exec "$W_VAR_NAME_ESC delete 1.0 end" && wish_exec "$W_VAR_NAME_ESC insert 1.0 $(tcl_str "$CONTENT")"
 			[ "$IGNORE_RETURN" = 1 ] && wish_exec "bind $W_VAR_NAME_ESC \"<Return>\" { break }"
 			;;
-		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|jpg|jpeg|p|l|i)
+		tlabel|timage|label|image|ttk::label|picture|img|bmp|bitmap|png|p|l|i)
 			[ $IS_NEW = 1 ] && wish_exec "$(themed label) $W_VAR_NAME_ESC -justify left -anchor nw"
 			[ -v CONTENT ] && wish_exec "$W_VAR_NAME_ESC configure -text $(tcl_str "${CONTENT}")"
 			[ -v IMAGE ] && wish_exec "image create photo imgobj$W_VAR_NAME_ESC -file $(tcl_str "${IMAGE}")" && wish_exec "$W_VAR_NAME_ESC configure -image imgobj$W_VAR_NAME_ESC"
@@ -525,7 +576,8 @@ handle_element_commands() {
 				#zero-indexed:
 				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
-				wish_exec "$(themed radiobutton) $W_VAR_NAME_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction $W_VAR_NAME_ESC\" -value ${radionumber}"
+				wish_exec "$(themed radiobutton) $W_VAR_NAME_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction onradiogroup$(tcl_esc "${GROUP}")\" -value ${radionumber}"
+				[ -v COMMAND ] && write_command_file "onradiogroup$GROUP" "$COMMAND" # radio event in tkbash works by group, not by element
 			 fi
 			[ -v CONTENT ] && wish_exec "$W_VAR_NAME_ESC configure -text $(tcl_str "${CONTENT}")"
 			if [ "$SELECTED" == 1 ]; then
