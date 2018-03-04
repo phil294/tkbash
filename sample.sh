@@ -1,6 +1,6 @@
 #!/bin/bash
 
-tkbash gui1 --theme clam --title "Fruit chooser" --icon "kitten.png" -w 405 -h 245
+tkbash gui1 --theme clam --title "Fruit chooser" --icon "kitten.png" -w 405 -h 245 --drag 1
 
 tkbash gui1 label  label1  -x 5   -y 5   -w 130 -h 30  --text "I like bananas."
 tkbash gui1 select select1 -x 5   -y 40  -w 130 -h 30  --text "Me too|I prefer cookies||Apples|???"

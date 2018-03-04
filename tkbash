@@ -415,20 +415,23 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		set relief_befrore_move_by_drag flat
 		set offset_x_before_move_by_drag 0
 		set offset_y_before_move_by_drag 0 
-		proc topframe_mouse_keydown {} {
+		proc topframe_mouse_keydown { window } {
 			global enable_move_by_drag borderwidth_before_move_by_drag relief_befrore_move_by_drag offset_x_before_move_by_drag offset_y_before_move_by_drag
 			if { \$enable_move_by_drag } {
-				set borderwidth_before_move_by_drag [ .w cget -borderwidth ]
-				set relief_befrore_move_by_drag [ .w cget -relief ]
-				set winX [ winfo x .w ]
-				set winY [ winfo y .w ]
-				set pointerX [ winfo pointerx .w ]
-				set pointerY [ winfo pointery .w ]
-				set offset_x_before_move_by_drag [ expr { \$pointerX - \$winX } ]
-				set offset_y_before_move_by_drag [ expr { \$pointerY - \$winY } ]
-				.w configure -borderwidth 3
-				.w configure -relief ridge
-				after 25 move_by_drag_ticker
+				set class [ winfo class \$window ]
+				if { [ lsearch { Button TButton Text Checkbutton TCheckbutton Radiobutton TRadiobutton TCombobox } \$class ] < 0 } {
+					set borderwidth_before_move_by_drag [ .w cget -borderwidth ]
+					set relief_befrore_move_by_drag [ .w cget -relief ]
+					set winX [ winfo x .w ]
+					set winY [ winfo y .w ]
+					set pointerX [ winfo pointerx .w ]
+					set pointerY [ winfo pointery .w ]
+					set offset_x_before_move_by_drag [ expr { \$pointerX - \$winX } ]
+					set offset_y_before_move_by_drag [ expr { \$pointerY - \$winY } ]
+					.w configure -borderwidth 3
+					.w configure -relief ridge
+					after 25 move_by_drag_ticker
+				}
 			}
 		}
 		proc move_by_drag_ticker {} {
@@ -455,7 +458,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 				after cancel move_by_drag_ticker
 			}
 		}
-		bind .w <ButtonPress-1> topframe_mouse_keydown
+		bind .w <ButtonPress-1> \"topframe_mouse_keydown %W\"
 		bind .w <ButtonRelease-1> topframe_mouse_keyup
 		"
 fi
