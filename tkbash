@@ -186,7 +186,7 @@ show_help() {
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
 OPTIONS=w:h:x:X:y:Y:c:t:
-LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onexit,onexited,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,style:,movebymouse:,movewithmouse:,drag,draggable:
+LONGOPTIONS=help,width:,height:,relx:,rely:,command:,alwaysontop:,maximize,resizable:,text:,content:,tk:,tkcommand:,disabled:,disable:,image:,group:,theme:,title:,iconify,hide,show,close,icon:,alpha:,transparency:,exit,destroy,topmost:,hotkey:,shortcut:,bind:,quit,ignore-return,entry,one-row,ignore-newline,selected,select,check,checked,deselected,unselected,deselect,unselect,unchecked,uncheck,onclose,onexit,onexited,onclosed,exist,exists,notitlebar,nobar,nocaption,nodecorations,nodecoration,overrideredirect,tooltip,popup,onclick,scrollbar:,foreground:,foregroundcolor:,color:,colour:,foregroundcolour:,textcolor:,textcolour:,background:,backgroundcolor:,backgroundcolour:,bck:,bg:,fg:,debug,print,log,notheme,style:,movebymouse:,movewithmouse:,drag:,draggable:
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTIONS --name "$0" -- "$@") || die 27
 if [[ $? -ne 0 ]]; then
 	die 2

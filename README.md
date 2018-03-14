@@ -31,6 +31,8 @@ tkbash gui1 label  label2  -x 140 -y 175 -w 395 -h 30 --text "?" --fg '#ff5555'
 - Entire functionality of Tk available if desired via `--tkcommand` (see end of this page)
 - Not very fast (above example takes ~0.35 sec)
 - Configure multiple GUIs that access each other
+- Busybox-compatible
+- Docker-compatible (see below)
 
 ### Popup
 Example of a basic popup (similar to notify-send) that closes itself and opens up google if clicked.
@@ -217,3 +219,6 @@ tkbash gui1 --tk 'package require tkdnd
         exec notify-send "You dropped %D"
     }'
 ```
+
+### Busybox and Docker Alpine
+You can run tkbash from within a Docker container with X11 forwarding. Unfortunately, Alpine Linux results in a segmentation fault ([bugreport](https://core.tcl.tk/tk/tktview?name=a043e3a8b5)), so you need another OS. In the subfolder `docker`, you find an example with Debian (run `build_run.sh`).
