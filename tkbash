@@ -77,7 +77,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}--show${COLOR_RESET}"
 	echo -e "\t\tSet the window visible by re-attaching it to the Winodow Manager."
 	echo -e "\t${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}"
-	echo -e "\t\tClose the window programmatically. This is equal to the user pressing the X button or pressing alt+f4."
+	echo -e "\t\tClose the window programmatically. This is equal to the user pressing the X button or pressing alt+f4. Waits until closing operations finished (including --onclose commands)."
 	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
 	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'\" Also see --command note below."
 	echo -e "\t${COLOR_BOLD}--onclose, --onexit${COLOR_RESET}"
@@ -358,6 +358,7 @@ fi
 if ! [[ -p "$WISH_PIPE" ]]; then
 	# gui does not exist yet. initialize stuff
 	# set up new pipe
+	[[ -f "$WISH_PIPE" ]] && rm "$WISH_PIPE" # can happen unintentionally (multiple calls interfering with each other)
 	mkfifo "$WISH_PIPE"
 	WISH_PIPE_HELPER=${WISH_PIPE}_
 	mkfifo "$WISH_PIPE_HELPER"
@@ -483,7 +484,10 @@ handle_window_commands() {
 	[ -n "$ICONIFY" ] && wish_exec "wm iconify .w"
 	[ -n "$HIDE" ] && wish_exec "wm withdraw .w"
 	[ -n "$SHOW" ] && wish_exec "wm deiconify .w"
-	[ -n "$CLOSE" ] && wish_exec "onexit"
+	if [ -n "$CLOSE" ]; then
+		wish_exec "onexit"
+		while [ -p "$WISH_PIPE" ]; do sleep 0.2; done # wait for pipe to disappear = everything cleaned up. prevents mess when bulk statements with close/create window
+	fi
 	if [ -n "$HOTKEY" ]; then
 		[ ! -v COMMAND ] && echo "hotkey command also needs the --command option." && die 23
 		wish_exec "bind .w <$(tcl_esc "$HOTKEY")> \"onaction onhotkey$(tcl_esc "$HOTKEY")\""
