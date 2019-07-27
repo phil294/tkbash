@@ -61,7 +61,7 @@ show_help() {
 	echo -e "\t${COLOR_BOLD}--maximize${COLOR_RESET}"
 	echo -e "\t\tMaxmize the window to fullscreen."
 	echo -e "\t${COLOR_BOLD}--alpha, --transparency${COLOR_RESET} <alpha>"
-	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1."
+	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1. Note that sometimes, this does not work. You might need to put a delay before using this option, for some reason. Try it out."
 	echo -e "\t${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>"
 	echo -e "\t\tSet the window icon."
 	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
@@ -296,9 +296,18 @@ tcl_str() {
 	local a="$(tcl_esc "$1")"
 	echo "\"$a\""
 }
-# write commands $2 into tmp command file for identifier $1, so the file can later be run by tcl proc onaction
-write_command_file() {
-	echo "${2}" > "${TMP}/${GUI_ID}${TMPFILE_APPENDIX}${1}_command" && chmod +x "${TMP}/${GUI_ID}${TMPFILE_APPENDIX}${1}_command"
+# write commands $2 into tmp file with configured name; create proc; so $2 can eventually be run as onaction_$1 (wrapper: onaction $1)
+create_command_proc() {
+	local commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")${TMPFILE_APPENDIX}${1}_command\""
+	wish_exec "
+		set fileid [ open $commandfile_tcl \"w\" ]
+		puts -nonewline \$fileid \"$(tcl_esc "$2")\"
+		close \$fileid
+		exec chmod +x $commandfile_tcl
+		
+		proc onaction_$1 {} {
+			return [ exec $commandfile_tcl >@stdout 2>@stderr & ]
+		}"
 }
 
 wish_exec() {
@@ -308,6 +317,7 @@ wish_exec() {
 	return 0
 }
 
+# TODO: instead of all of this function, and instead of all the WISH_PIPE stuff as well, maybe consider using coproc logic instead. This could help with the back and forth sending of text to wish and simplify the code. Not sure though.
 wish_get() {
 	# communicate bidirectionally with running wish process
 	rm -f "$COMMUNICATION_FILE"
@@ -377,7 +387,6 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		exit 0
 	) &
 	set +m
-	commandfile_tcl="\"$(tcl_esc "${TMP}/${GUI_ID}")${TMPFILE_APPENDIX}\${trigger}_command\""
 	if [ "$NOTITLEBAR" = 1 ]; then # thanks to Donal Fellows! https://stackoverflow.com/a/30885979/3779853
 		additional_content_notitlebar="wm overrideredirect .w 1
 			wm attribute .w -type toolltip" # it is up to the window manager how to interpret the window type
@@ -387,11 +396,16 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		wm withdraw .
 		# custom toplevel: .w
 		toplevel .w
+		proc procExists p {
+			# TODO: A good amount of all the tcl code in this file should probably be refactored. Unfortunately, I have no clue of tcl so it is damned to stay for that for quite a while.
+			return uplevel 1 [expr {[llength [info procs \$p]] > 0}]
+		}
 		$additional_content_notitlebar
 		# create listenerhandler: execute respective script on command / bind etc. used by -command options below. can be nothing.
 		proc onaction {trigger} {
-			if { [file exists ${commandfile_tcl}] == 1} {
-				return [ exec ${commandfile_tcl} >@stdout 2>@stderr & ]
+			set e [ procExists onaction_\$trigger ]
+			if {\$e == 1} {
+				return [ onaction_\$trigger ]
 			}
 			return -1
 		}
@@ -404,7 +418,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 				# onclose action needs to terminate before remaining scripts and pipe can be deleted
 				exec /bin/sleep 0.02
 			}
-			# exec kill -INT -$wish_group_id # need to send 'exit' to tcl instead because tcl canNOT handle signals natively. needed sometimes (to have xclip changes to clipboard be persistent, for example). alternative would be Tcl_finalize from <tcl.h> via custom extension, but tkbash requires no external lib
+			# exec kill -INT -$wish_group_id # need to send 'exit' to tcl instead because tcl canNOT handle signals natively. needed sometimes (to have xclip changes to clipboard be persistent, for example). alternative would be Tcl_finalize from <tcl.h> via custom extension, but tkbash requires no external lib. thus:
 			exit
 		}
 		# on window close: call custom exit
@@ -491,20 +505,18 @@ handle_window_commands() {
 	if [ -n "$HOTKEY" ]; then
 		[ ! -v COMMAND ] && echo "hotkey command also needs the --command option." && die 23
 		wish_exec "bind .w <$(tcl_esc "$HOTKEY")> \"onaction onhotkey$(tcl_esc "$HOTKEY")\""
-		write_command_file "onhotkey$HOTKEY" "$COMMAND"
+		create_command_proc "onhotkey$HOTKEY" "$COMMAND"
 	fi
 	if [ -n "$ON_CLOSE" ]; then
 		[ ! -v COMMAND ] && echo "on-close command also needs the --command option." && die 23
-		write_command_file "onclose" "$COMMAND"
+		create_command_proc "onclose" "$COMMAND"
 	fi
 	if [ -n "$ON_CLICK" ]; then
 		[ ! -v COMMAND ] && echo "on-click command also needs the --command option." && die 26
-		write_command_file "onclick" "$COMMAND"
+		create_command_proc "onclick" "$COMMAND"
 	fi
 	[ -v BACKGROUND ] && wish_exec ".w configure -background $(tcl_str "$BACKGROUND")" # todo -v? -n? inconsistent usage
 	[ -n "$MOVE_BY_MOUSE" ] && wish_exec "set enable_move_by_drag $(tcl_str "$MOVE_BY_MOUSE")"
-
-	# todo draggable
 
 	# custom user tk commands to be executed directly
 	[ -v TKCOMMAND ] && wish_exec "${TKCOMMAND}"
@@ -586,7 +598,7 @@ handle_element_commands() {
 				local radionumber=$((groupmembers_amount)) # also considers empty response
 				###
 				wish_exec "$(themed radiobutton) $W_VAR_NAME_ESC -variable $(tcl_esc "${GROUP}") -command \"onaction onradiogroup$(tcl_esc "${GROUP}")\" -value ${radionumber}"
-				[ -v COMMAND ] && write_command_file "onradiogroup$GROUP" "$COMMAND" # radio event in tkbash works by group, not by element
+				[ -v COMMAND ] && create_command_proc "onradiogroup$GROUP" "$COMMAND" # radio event in tkbash works by group, not by element
 			 fi
 			[ -v CONTENT ] && wish_exec "$W_VAR_NAME_ESC configure -text $(tcl_str "${CONTENT}")"
 			if [ "$SELECTED" == 1 ]; then
@@ -638,8 +650,8 @@ handle_element_commands() {
 				$W_VAR_NAME_ESC configure -style $VAR_NAME.$class"
 		fi
 	fi
-	# create/override command file (label -c "..." would be possible, creates file but no action)
-	[ -v COMMAND ] && write_command_file ".w.$VAR_NAME" "$COMMAND"
+	# create/override command (label -c "..." would be possible, creates file but no action)
+	[ -v COMMAND ] && create_command_proc ".w.$VAR_NAME" "$COMMAND"
 	# parse place options
 	[ -n "$X" ] || [ -n "$Y" ] || [ -n "$RELX" ] || [ -n "$RELY" ] || [ -n "$WIDTH" ] || [ -n "$HEIGHT" ] &&
 		wish_exec "place $W_VAR_NAME_ESC ${X:+-x $((X))} ${RELX:+-relx $(tcl_str "$RELX")} ${Y:+-y $((Y))} ${RELY:+-relx $(tcl_str "$RELY")} ${WIDTH:+-width $((WIDTH))} ${HEIGHT:+-height $((HEIGHT))}" # todo X as x ?
