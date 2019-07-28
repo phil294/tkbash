@@ -25,163 +25,246 @@ mkdir -p "$TMP"
 show_help() {
 	COLOR_BOLD="$(tput bold)"
 	COLOR_RESET="$(tput sgr0)"
-	echo ">>> ${COLOR_BOLD}TkBash${COLOR_RESET}. Basic Bash superset for Tcl/Tk gui. Just a layer, NO reimplementation of Tk. Place elements using absolute coordinates x/y/w/h."
-	echo
-	echo "${COLOR_BOLD}USAGE${COLOR_RESET}:"
-	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<element>] <variable> [-options...]${COLOR_RESET}"
-	echo -e "\t\tAdd / edit element. For basic usage, you dont need anything else."
-	echo -e "\t${COLOR_BOLD}tkbash <gui_id> get <variable>${COLOR_RESET}"
-	echo -e "\t\tPrint the value of the associated element."
-	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [-options...]${COLOR_RESET}"
-	echo -e "\t\tSet global window properties."
-	echo
-	echo -e "\t${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}"
-	echo -e "\t\tExecute custom Tcl/Tk code. For advanced element configuration not provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable can be ommitted for full access. Example: \"tkbash mygui mybutton --tkcommand 'configure -font verdana'\" or \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\". Note: toplevel root window in tkbash is \".w\"."
-	echo -e "\t${COLOR_BOLD}[any command...] --debug, --print, --log${COLOR_RESET}"
-	echo -e "\t\tPrint all commands sent to the wish background process (Tcl/Tk code) to stderr. For debugging."
-	echo
-	echo
-	echo -e "\t\t${COLOR_BOLD}gui_id${COLOR_RESET}"
-	echo -e "\t\t\tUnique identifier for the GUI. To be reused with subsequent tkbash calls."
-	echo -e "\t\t${COLOR_BOLD}element${COLOR_RESET}"
-	echo -e "\t\t\tAny of the elements listed below. Required when adding a new one."
-	echo -e "\t\t${COLOR_BOLD}variable${COLOR_RESET}"
-	echo -e "\t\t\tVariable to hold the value associated with the element."
-	echo
-	echo -e "\t\tWhen adding an element for the first time, all positional options are required (-x, -y, -w, -h). See general element options."
-	echo
-	echo -e "${COLOR_BOLD}Window properties${COLOR_RESET}"
-	echo -e "Set options for the entire interface / window as described above. You can set width and height if BOTH are specified (if w and y are also specified, you will set also the window position)."
-	echo -e "\t${COLOR_BOLD}--theme${COLOR_RESET} <themename>"
-	echo -e "\t\tSet the look and feel used by all all elements. Available themes usually include clam, alt, default and classic. Important: If you use this option, any individual styling to themed elements might be gone and needs to be reapplied."
-	echo -e "\t${COLOR_BOLD}--title${COLOR_RESET} <title>"
-	echo -e "\t\tSet the window title."
-	echo -e "\t${COLOR_BOLD}--alwaysontop, --topmost${COLOR_RESET} <switch>"
-	echo -e "\t\tSet the window's always on top behaviour. Activate with 0, deactivate with 1."
-	echo -e "\t${COLOR_BOLD}--maximize${COLOR_RESET}"
-	echo -e "\t\tMaxmize the window to fullscreen."
-	echo -e "\t${COLOR_BOLD}--alpha, --transparency${COLOR_RESET} <alpha>"
-	echo -e "\t\tSet the transparency of the entire window. Floating value between 0 and 1. Note that sometimes, this does not work. You might need to put a delay before using this option, for some reason. Try it out."
-	echo -e "\t${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>"
-	echo -e "\t\tSet the window icon."
-	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
-	echo -e "\t\tSet the background color for the entire window. You might need to also set the background for individual elements for they do not inherit this setting. Use common color names like red, yellow etc. or hex notation #ff1234."
-	echo -e "\t${COLOR_BOLD}--resizable${COLOR_RESET} <switch>"
-	echo -e "\t\tSet the window's resizable behaviour. Activate with 0, deactivate with 1."
-	echo -e "\t${COLOR_BOLD}--movebymouse, --movewithmouse, --draggable --drag${COLOR_RESET} <switch>"
-	echo -e "\t\tEnable or disable the ability of the window to be dragged with the mouse around the screen. Activate with 0, deactivate with 1. The window can only be dragged when the mouse is not hovering over any interactive element. Note: If you are looking for drag&drop for external files, text etc., see the readme example at the end."
-	echo -e "\t${COLOR_BOLD}--iconify${COLOR_RESET}"
-	echo -e "\t\tMinimize the window."
-	echo -e "\t${COLOR_BOLD}--hide${COLOR_RESET}"
-	echo -e "\t\tHide the window by detaching it from the Window Manager."
-	echo -e "\t${COLOR_BOLD}--show${COLOR_RESET}"
-	echo -e "\t\tSet the window visible by re-attaching it to the Winodow Manager."
-	echo -e "\t${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}"
-	echo -e "\t\tClose the window programmatically. This is equal to the user pressing the X button or pressing alt+f4. Waits until closing operations finished (including --onclose commands)."
-	echo -e "\t${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when a key (\"sequence\") is pressed. Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5. Specify the commands to be executed use the --command option. Example: \"tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'\" Also see --command note below."
-	echo -e "\t${COLOR_BOLD}--onclose, --onexit${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when the window is closed. Specify the commands to be executed using the --command option. Example: \"tkbash mygui --onclose --command 'echo tkbash now exits.'\" The GUI will only exit once the --command has finished. Also see --command note below."
-	echo -e "\t${COLOR_BOLD}--exist${COLOR_RESET}"
-	echo -e "\t\tPrints 1 if the specified <gui_id> belongs to a running window, 0 otherwise."
-	echo -e "\t${COLOR_BOLD}--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup, --overrideredirect${COLOR_RESET}"
-	echo -e "\t\tImportant: This option is only considered at window creation. Thus, it should be part of the very first tkbash call made for this <gui_id>. - Make the GUI unmapped: The window cannot be moved, typed into, have hotkeys assigned etc. The window is automatically always-on-top and does not appear in the panel. This option might be interesting for creating a tooltip. Appropriate buttons should be configured so the user can actually close the window (see window --close)."
-	echo -e "\t${COLOR_BOLD}--onclick${COLOR_RESET}"
-	echo -e "\t\tAdd an action to be executed when the user clicks anywhere on the gui. Specify the commands to be executed using the --command option. Example: \"tkbash mygui --onclick --command 'echo You clicked the window.'\" Also see --command note below."
-	echo
-	echo -e "${COLOR_BOLD}ELEMENTS${COLOR_RESET}"
-	echo -e "\t${COLOR_BOLD}button${COLOR_RESET} / submit / b"
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tThe text that will be displayed on the button."
-	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
-	echo -e "\t\t\t\tCode to be executed when the element is clicked. Also see --command note below."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tYou cannot retrieve any value from a button."
-	echo -e "\t${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea / t"
-	echo -e "\t\tA text element is a multiline input area for text."
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}--scrollbar${COLOR_RESET} <switch>"
-	echo -e "\t\t\t\tShow or hide the vertical scrollbar next to the textfield. <switch> is 0 or 1."
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tSet the contents of the text field."
-	echo -e "\t\t\t${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}"
-	echo -e "\t\t\t\tThe user cannot type newlines. If combined with an appropriate height, this could also be used as a form input."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tPrints the contents of the text field."
-	echo -e "\t${COLOR_BOLD}label${COLOR_RESET} / p / l"
-	echo -e "\t\tA label element displays plain text somewhere on the gui."
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tSet the contents of the label."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tYou cannot retrieve any value from a label."
-	echo -e "\t${COLOR_BOLD}image${COLOR_RESET} / picture / img / bmp / bitmap / i"
-	echo -e "\t\tDisplay an image."
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}--image${COLOR_RESET} <path>"
-	echo -e "\t\t\t\tPath of the image to be shown. Not all formats are supported. (yes: png, no: jpg)"
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tYou cannot retrieve any value from an image."
-	echo -e "\t\tNote: Internally, this does the same like 'label', meaning these two element names are interchangeable."
-	echo -e "\t${COLOR_BOLD}checkbutton${COLOR_RESET} / checkbox / check / tick / toggle / cb"
-	echo -e "\t\tFor boolean values. If neither --checked nor --unchecked is passed, the checkbutton is in a neither-state (pristine)"
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tSet the text to be displayed next to the tick."
-	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
-	echo -e "\t\t\t\tCode to be executed when the element is clicked. Also see --command note below."
-	echo -e "\t\t\t${COLOR_BOLD}--selected, --checked${COLOR_RESET}"
-	echo -e "\t\t\t\tSet selected state to 1."
-	echo -e "\t\t\t${COLOR_BOLD}--deselected, --unchecked${COLOR_RESET}"
-	echo -e "\t\t\t\tSet selected state to 0."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tPrints 1 when checked, 0 when unchecked, nothing when pristine."
-	echo -e "\t${COLOR_BOLD}radiobutton${COLOR_RESET} / radio / r"
-	echo -e "\t\tMultiple radiobuttons form a group. Only one radiobutton in a group can be active at the same time."
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t[required] ${COLOR_BOLD}--group${COLOR_RESET} <group-id>"
-	echo -e "\t\t\t\tAssign this radiobutton to a group. Can be any string. See 'get' below. In contrary to most options, this one can not be changed afterwards, meaning if you pass it any other time that on element creation, it is ignored."
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tSet the text to be displayed next to the radiobutton."
-	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
-	echo -e "\t\t\t\tCode to be executed when the element is clicked. Also see --command note below."
-	echo -e "\t\t\t${COLOR_BOLD}--selected, --checked${COLOR_RESET}"
-	echo -e "\t\t\t\tSet this radio as the selected one from its group."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tEvery radiobutton gets internally assigned a number. The first radiobutton of a group has the number 0, the second 1, third 2 and so on. When you call the 'get' method for any of the radios contained in this group, it will print out the number of the selected radio (or nothing when pristine) in its group: 0 or 1 or 2 or whatever. The name of the group does not matter for retrieving the value. The group is only needed when a radiobutton is created."
-	echo -e "\t${COLOR_BOLD}combobox${COLOR_RESET} / select / dropdown / dropdownmenu / s / c"
-	echo -e "\t\tSelect one of many values. Behaves like a classical HTML-select (the Tk-state 'readonly' is active)."
-	echo -e "\t\tOptions:"
-	echo -e "\t\t\t${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>"
-	echo -e "\t\t\t\tA pipe-delimited list (e.g. \"option1|option2|option3\") of options for this select which the user will be able to choose from. Set the default value by appending two pipes. For example \"option1|option2||option3\" to have option2 be selected by default. Otherwise, the first one will be selected."
-	echo -e "\t\t\t${COLOR_BOLD}-c, --command${COLOR_RESET} <command>"
-	echo -e "\t\t\t\tCode to be executed when an item is chosen. Also see --command note below."
-	echo -e "\t\tGet:"
-	echo -e "\t\t\tPrints the selected value, e.g. \"option1\" when the first value is chosen."
-	echo
-	echo -e "${COLOR_BOLD}General element options${COLOR_RESET}"
-	echo -e "\t${COLOR_BOLD}-x <x-position>${COLOR_RESET}"
-	echo -e "\t(optional) ${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}"
-	echo -e "\t${COLOR_BOLD}-y <y-position>${COLOR_RESET}"
-	echo -e "\t(optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}"
-	echo -e "\t${COLOR_BOLD}-w, --width <width>${COLOR_RESET}"
-	echo -e "\t${COLOR_BOLD}-h, --height <height>${COLOR_RESET}"
-	echo
-	echo -e "\t${COLOR_BOLD}--disabled${COLOR_RESET} <switch>"
-	echo -e "\t\tDissables (greys out) the command. Can be used with any element, will however take no action  on labels. <switch> is 0 or 1."
-	echo -e "\t${COLOR_BOLD}--notheme${COLOR_RESET}"
-	echo -e "\t\tMake the element ignore the current theme. Can only be used upon element creation (ignored in subsequent calls!)." # todo consider in subseq calls?
-	echo -e "\t${COLOR_BOLD}--foreground, --foregroundcolor, --color, --textcolor, --fg${COLOR_RESET} <color>"
-	echo -e "\t\tSet the foreground color (typically, text color). Use common color names like red, yellow etc. or hex notation #ff1234."
-	echo -e "\t${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>"
-	echo -e "\t\tSet the background color. Use common color names like red, yellow etc. or hex notation #ff1234."
-	echo -e "\t${COLOR_BOLD}--style${COLOR_RESET} <property:value>"
-	echo -e "\t\tYou can set any arbitrary styling option with this syntax, even those which are not supported natively by tkbash. For a list of available properties, visit https://www.tcl.tk/man/tcl8.4/TkCmd/options.htm or https://wiki.tcl.tk/37973 or ...? (neither of them is complete it seems). Example: 'tkbash mygui mybutton --style \"font:verdana 20\"'"
-	echo
-	echo -e "${COLOR_BOLD}Additional notes${COLOR_RESET}"
-	echo -e "Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command contents will be written into a temp file and then called on action. You can preceed this with your custom shebang. Thus, session variables cannot be accessed."
+	echo -e "
+>>> ${COLOR_BOLD}TkBash${COLOR_RESET}. Basic Bash superset for Tcl/Tk gui. Just a layer,
+NO reimplementation of Tk. Place elements using absolute coordinates x/y/w/h.
+
+${COLOR_BOLD}USAGE${COLOR_RESET}:
+    ${COLOR_BOLD}tkbash <gui_id> [<element>] <variable> [-options...]${COLOR_RESET}
+        Add / edit element. For basic usage, you dont need anything else.
+    ${COLOR_BOLD}tkbash <gui_id> get <variable>${COLOR_RESET}
+        Print the value of the associated element.
+    ${COLOR_BOLD}tkbash <gui_id> [-options...]${COLOR_RESET}
+        Set global window properties.
+
+    ${COLOR_BOLD}tkbash <gui_id> [<variable>] --tkcommand <command>${COLOR_RESET}
+        Execute custom Tcl/Tk code. For advanced element configuration not
+        provied by tkbash itself. \"--tkcommand\" can also be \"--tk\". Variable
+        can be ommitted for full access. Example:
+        \"tkbash mygui mybutton --tkcommand 'configure -font verdana'\" or
+        \"tkbash mygui --tkcommand 'wm maxsize .w 200 200'\".
+        Note: toplevel root window in tkbash is \".w\".
+    ${COLOR_BOLD}[any command...] --debug, --print, --log${COLOR_RESET}
+        Print all commands sent to the wish background process (Tcl/Tk code)
+        to stderr. For debugging.
+
+
+        ${COLOR_BOLD}gui_id${COLOR_RESET}
+            Unique identifier for the GUI. To be reused with subsequent tkbash
+            calls.
+        ${COLOR_BOLD}element${COLOR_RESET}
+            Any of the elements listed below. Required when adding a new one.
+        ${COLOR_BOLD}variable${COLOR_RESET}
+            Variable to hold the value associated with the element.
+
+        When adding an element for the first time, all positional options are
+        required (-x, -y, -w, -h). See general element options.
+
+${COLOR_BOLD}Window properties${COLOR_RESET}
+Set options for the entire interface / window as described above. You can set
+width and height if BOTH are specified (if w and y are also specified, you will
+set also the window position).
+    ${COLOR_BOLD}--theme${COLOR_RESET} <themename>
+        Set the look and feel used by all all elements. Available themes usually
+        include clam, alt, default and classic. Important: If you use this
+        option, any individual styling to themed elements might be gone and
+        needs to be reapplied.
+    ${COLOR_BOLD}--title${COLOR_RESET} <title>
+        Set the window title.
+    ${COLOR_BOLD}--alwaysontop, --topmost${COLOR_RESET} <switch>
+        Set the window's always on top behaviour. Activate with 0,
+        deactivate with 1.
+    ${COLOR_BOLD}--maximize${COLOR_RESET}
+        Maxmize the window to fullscreen.
+    ${COLOR_BOLD}--alpha, --transparency${COLOR_RESET} <alpha>
+        Set the transparency of the entire window. Floating value between 0 and
+        1. Note that sometimes, this does not work. You might need to put a
+        delay before using this option, for some reason. Try it out.
+    ${COLOR_BOLD}--icon${COLOR_RESET} <iconpath>
+        Set the window icon.
+    ${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>
+        Set the background color for the entire window. You might need to also
+        set the background for individual elements for they do not inherit this
+        setting. Use common color names like red, yellow etc. or hex notation
+        like #ff1234.
+    ${COLOR_BOLD}--resizable${COLOR_RESET} <switch>
+        Set the window's resizable behaviour. Activate with 0, deactivate with 1.
+    ${COLOR_BOLD}--movebymouse, --movewithmouse, --draggable --drag${COLOR_RESET} <switch>
+        Enable or disable the ability of the window to be dragged with the mouse
+        around the screen. Activate with 0, deactivate with 1. The window can
+        only be dragged when the mouse is not hovering over any interactive
+        element. Note: If you are looking for drag&drop for external files, text
+        etc., see the readme example at the end.
+    ${COLOR_BOLD}--iconify${COLOR_RESET}
+        Minimize the window.
+    ${COLOR_BOLD}--hide${COLOR_RESET}
+        Hide the window by detaching it from the Window Manager.
+    ${COLOR_BOLD}--show${COLOR_RESET}
+        Set the window visible by re-attaching it to the Winodow Manager.
+    ${COLOR_BOLD}--close, --exit, --quit, --destroy${COLOR_RESET}
+        Close the window programmatically. This is equal to the user pressing
+        the X button or pressing alt+f4. Waits until closing operations finished
+        (including --onclose commands).
+    ${COLOR_BOLD}--hotkey, --bind, --shortcut${COLOR_RESET}
+        Add an action to be executed when a key (\"sequence\") is pressed.
+        Possible sequences: See https://www.tcl.tk/man/tcl8.4/TkCmd/bind.htm#M5.
+        Specify the commands to be executed use the --command option. Example:
+        \"tkbash mygui --hotkey Escape --command 'echo You pressed Escape.'\"
+        Also see --command note below.
+    ${COLOR_BOLD}--onclose, --onexit${COLOR_RESET}
+        Add an action to be executed when the window is closed. Specify the
+        commands to be executed using the --command option. Example:
+        \"tkbash mygui --onclose --command 'echo tkbash now exits.'\"
+        The GUI will only exit once the --command has finished. Also see
+        --command note below.
+    ${COLOR_BOLD}--exist${COLOR_RESET}
+        Prints 1 if the specified <gui_id> belongs to a running window, 0
+        otherwise.
+    ${COLOR_BOLD}--notitlebar, --nobar, --nocaption, --nodecorations, --tooltip, --popup,
+    --overrideredirect${COLOR_RESET}
+        Important: This option is only considered at window creation. Thus, it
+        should be part of the very first tkbash call made for this <gui_id>.
+        - Make the GUI unmapped: The window cannot be moved, typed into, have
+        hotkeys assigned etc. The window is automatically always-on-top and does
+        not appear in the panel. This option might be interesting for creating a
+        tooltip. Appropriate buttons should be configured so the user can
+        actually close the window (see window --close).
+    ${COLOR_BOLD}--onclick${COLOR_RESET}
+        Add an action to be executed when the user clicks anywhere on the gui.
+        Specify the commands to be executed using the --command option. Example:
+        \"tkbash mygui --onclick --command 'echo You clicked the window.'\" Also
+        see --command note below.
+
+${COLOR_BOLD}ELEMENTS${COLOR_RESET}
+    ${COLOR_BOLD}button${COLOR_RESET} / submit / b
+        Options:
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                The text that will be displayed on the button.
+            ${COLOR_BOLD}-c, --command${COLOR_RESET} <command>
+                Code to be executed when the element is clicked. Also see
+                --command note below.
+        Get:
+            You cannot retrieve any value from a button.
+    ${COLOR_BOLD}text${COLOR_RESET} / input / edit / textfield / textarea / t
+        A text element is a multiline input area for text.
+        Options:
+            ${COLOR_BOLD}--scrollbar${COLOR_RESET} <switch>
+                Show or hide the vertical scrollbar next to the textfield.
+                <switch> is 0 or 1.
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                Set the contents of the text field.
+            ${COLOR_BOLD}--ignore-return, --ignore-newline, --entry, --one-row${COLOR_RESET}
+                The user cannot type newlines. If combined with an appropriate
+                height, this could also be used as a form input.
+        Get:
+            Prints the contents of the text field.
+    ${COLOR_BOLD}label${COLOR_RESET} / p / l
+        A label element displays plain text somewhere on the gui.
+        Options:
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                Set the contents of the label.
+        Get:
+            You cannot retrieve any value from a label.
+    ${COLOR_BOLD}image${COLOR_RESET} / picture / img / bmp / bitmap / i
+        Display an image.
+        Options:
+            ${COLOR_BOLD}--image${COLOR_RESET} <path>
+                Path of the image to be shown. Not all formats are supported.
+                (yes: png, no: jpg)
+        Get:
+            You cannot retrieve any value from an image.
+        Note: Internally, this does the same like 'label', meaning these two
+        element names are interchangeable.
+    ${COLOR_BOLD}checkbutton${COLOR_RESET} / checkbox / check / tick / toggle / cb
+        For boolean values. If neither --checked nor --unchecked is passed, the
+        checkbutton is in a neither-state (pristine)
+        Options:
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                Set the text to be displayed next to the tick.
+            ${COLOR_BOLD}-c, --command${COLOR_RESET} <command>
+                Code to be executed when the element is clicked. Also see
+                --command note below.
+            ${COLOR_BOLD}--selected, --checked${COLOR_RESET}
+                Set selected state to 1.
+            ${COLOR_BOLD}--deselected, --unchecked${COLOR_RESET}
+                Set selected state to 0.
+        Get:
+            Prints 1 when checked, 0 when unchecked, nothing when pristine.
+    ${COLOR_BOLD}radiobutton${COLOR_RESET} / radio / r
+        Multiple radiobuttons form a group. Only one radiobutton in a group can
+        be active at the same time.
+        Options:
+            [required] ${COLOR_BOLD}--group${COLOR_RESET} <group-id>
+                Assign this radiobutton to a group. Can be any string. See 'get'
+                below. In contrary to most options, this one can not be changed
+                afterwards, meaning if you pass it any other time that on
+                element creation, it is ignored.
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                Set the text to be displayed next to the radiobutton.
+            ${COLOR_BOLD}-c, --command${COLOR_RESET} <command>
+                Code to be executed when the element is clicked. Also see
+                --command note below.
+            ${COLOR_BOLD}--selected, --checked${COLOR_RESET}
+                Set this radio as the selected one from its group.
+        Get:
+            Every radiobutton gets internally assigned a number. The first
+            radiobutton of a group has the number 0, the second 1, third 2 and
+            so on. When you call the 'get' method for any of the radios
+            contained in this group, it will print out the number of the
+            selected radio (or nothing when pristine) in its group: 0 or 1 or 2
+            or whatever. The name of the group does not matter for retrieving
+            the value. The group is only needed when a radiobutton is created.
+    ${COLOR_BOLD}combobox${COLOR_RESET} / select / dropdown / dropdownmenu / s / c
+        Select one of many values. Behaves like a classical HTML-select (the Tk-
+        state 'readonly' is active).
+        Options:
+            ${COLOR_BOLD}-t, --text, --content${COLOR_RESET} <text>
+                A pipe-delimited list (e.g. \"option1|option2|option3\") of
+                options for this select which the user will be able to choose
+                from. Set the default value by appending two pipes. For example
+                \"option1|option2||option3\" to have option2 be selected by
+                default. Otherwise, the first one would be selected.
+            ${COLOR_BOLD}-c, --command${COLOR_RESET} <command>
+                Code to be executed when an item is chosen. Also see
+                --command note below.
+        Get:
+            Prints the selected value, e.g. \"option1\" when the first value is
+            chosen.
+
+${COLOR_BOLD}General element options${COLOR_RESET}
+    ${COLOR_BOLD}-x <x-position>${COLOR_RESET}
+    (optional) ${COLOR_BOLD}-X, --relx <x-position>${COLOR_RESET}
+    ${COLOR_BOLD}-y <y-position>${COLOR_RESET}
+    (optional) ${COLOR_BOLD}-Y, --rely <y-position>${COLOR_RESET}
+    ${COLOR_BOLD}-w, --width <width>${COLOR_RESET}
+    ${COLOR_BOLD}-h, --height <height>${COLOR_RESET}
+
+    ${COLOR_BOLD}--disabled${COLOR_RESET} <switch>
+        Dissables (greys out) the command. Can be used with any element, will
+        however take no action  on labels. <switch> is 0 or 1.
+    ${COLOR_BOLD}--notheme${COLOR_RESET}
+        Make the element ignore the current theme. Can only be used upon element
+        creation (ignored in subsequent calls!).
+    ${COLOR_BOLD}--foreground, --foregroundcolor, --color, --textcolor, --fg${COLOR_RESET} <color>
+        Set the foreground color (typically, text color). Use common color names
+        like red, yellow etc. or hex notation #ff1234.
+    ${COLOR_BOLD}--background, --backgroundcolor, --bck, --bg${COLOR_RESET} <color>
+        Set the background color. Use common color names like red, yellow etc.
+        or hex notation like #ff1234.
+    ${COLOR_BOLD}--style${COLOR_RESET} <property:value>
+        You can set any arbitrary styling option with this syntax, even those
+        which are not supported natively by tkbash. For a list of available
+        properties, visit https://www.tcl.tk/man/tcl8.4/TkCmd/options.htm or
+        https://wiki.tcl.tk/37973 or ...? (neither of them is complete it
+        seems). Example: 'tkbash mygui mybutton --style \"font:verdana 20\"'
+
+${COLOR_BOLD}Additional notes${COLOR_RESET}
+Note on the ${COLOR_BOLD}-c, --command${COLOR_RESET} option: The command contents will be written into
+a temp file and then called on action. You can preceed this with your custom
+shebang. Thus, session variables cannot be accessed.
+"
 }
+
 
 ########################### OPTION PARSING & VARIABLES INITIALIZATION
 
