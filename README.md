@@ -44,7 +44,7 @@ tkbash gui2 --notitlebar -w 350 -h 100 -x 10 -y 10 --alpha 0.68 --bg black --onc
 tkbash gui2 p p -x 10 -y 10 -w 330 -h 80 --bg black --fg white -t "popup text..."
 ```
 
-This repository is fairly new. If you experience any issues or think that some cool stuff is missing, please open an issue above or contact eochgls@web.de. Commits welcome.
+This repository is fairly new. If you experience any issues or think that some cool stuff is missing, please open an issue above or contact philip@waritschlager.de. Commits welcome.
 
 Snapshot of `tkbash --help`:
 
