@@ -465,7 +465,7 @@ if ! [[ -p "$WISH_PIPE" ]]; then
 		tail_pid=$!
 		wish < "$WISH_PIPE"
 		# wish exited. clean up: remove command files, wishpipe etc.
-		kill -INT $tail_pid
+		kill -TERM $tail_pid
 		rm "${TMP}/${GUI_ID}${TMPFILE_APPENDIX}"*
 		exit 0
 	) &
