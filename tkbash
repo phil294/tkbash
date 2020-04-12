@@ -1,11 +1,7 @@
 #!/bin/bash
 
-# 20170812 tkbash @ https://github.com/phil294/tkbash.git
-# eochgls@web.de
-#  .___.
-#  {o,o}
-# /)___)
-# --"-"--
+# tkbash
+# https://github.com/phil294/tkbash.git
 
 set -e
 
