@@ -4,7 +4,7 @@ Bash wrapper for Tcl/Tk gui. Inspired by [AutoHotkey](https://autohotkey.com/doc
 
 ---
 *Status of this project:*
-*It all works pretty well (albeit slow) and stable. The only known significant bug is #14. I'm not actively working on this anymore but if someone feels like it, I will of course help you out. For a more feature-complete and much more performant alternative for easy Guis on Linux – if Python is feasible for you – I recommend [guietta](https://github.com/alfiopuglisi/guietta/)*
+*It all works pretty well (albeit slow) and stable. The only known significant bug is [#14](/../../issues/14). I'm not actively working on this anymore but if someone feels like it, I will of course help you out. For a more feature-complete and much more performant alternative for easy Guis on Linux – if Python is feasible for you – I recommend [guietta](https://github.com/alfiopuglisi/guietta/)*
 
 ---
 
